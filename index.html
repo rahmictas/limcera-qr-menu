@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trabzon Limcera | Dijital Menü</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-stone-50 text-stone-800 font-sans antialiased pb-12">
+
+  <!-- Üst Başlık ve Arama -->
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-stone-200 shadow-sm">
+    <div class="max-w-3xl mx-auto px-4 pt-4 pb-3">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <h1 class="text-xl font-bold tracking-tight text-stone-900">TRABZON LİMCERA</h1>
+          <p class="text-xs text-stone-500">Hoş Geldiniz • Dijital Menü</p>
+        </div>
+        <span class="text-xs font-medium bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full">Fiyatlara KDV Dahildir</span>
+      </div>
+
+      <!-- Arama Kutusu -->
+      <div class="relative mb-3">
+        <input type="text" id="searchInput" placeholder="Ürün veya lezzet ara..." 
+          class="w-full pl-9 pr-4 py-2 bg-stone-100 border border-transparent focus:border-amber-500 focus:bg-white rounded-xl text-sm outline-none transition" />
+        <svg class="w-4 h-4 text-stone-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </div>
+
+      <!-- Kategori Sekmeleri -->
+      <div id="categoryTabs" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div>
+    </div>
+  </header>
+
+  <!-- Menü Listesi -->
+  <main class="max-w-3xl mx-auto px-4 pt-5">
+    <div id="loading" class="text-center py-12 text-stone-500 text-sm">Menü yükleniyor...</div>
+    <div id="menuContainer" class="space-y-8"></div>
+  </main>
+
+  <script>
+    // 1. BURAYA KENDİ SUPABASE BİLGİLERİNİZİ GİRİN
+    const SUPABASE_URL = 'https://SENIN-PROJE-ID.supabase.co';
+    const SUPABASE_ANON_KEY = 'SENIN-ANON-PUBLIC-KEYIN';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let allProducts = [];
+    let selectedCategory = 'TÜMÜ';
+
+    async function fetchMenu() {
+      const { data, error } = await sb
+        .from('urunler')
+        .select('*')
+        .eq('aktif_mi', true)
+        .order('sira_no', { ascending: true })
+        .order('id', { ascending: true });
+
+      document.getElementById('loading').style.display = 'none';
+
+      if (error) {
+        document.getElementById('menuContainer').innerHTML = `<p class="text-red-500 text-center">Menü yüklenirken hata oluştu.</p>`;
+        return;
+      }
+
+      allProducts = data || [];
+      renderCategories();
+      renderMenu();
+    }
+
+    function renderCategories() {
+      const categories = ['TÜMÜ', ...new Set(allProducts.map(p => p.kategori))];
+      const tabsEl = document.getElementById('categoryTabs');
+      tabsEl.innerHTML = categories.map(cat => `
+        <button onclick="selectCategory('${cat}')"
+          class="whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-semibold transition ${
+            selectedCategory === cat 
+              ? 'bg-stone-900 text-white shadow-sm' 
+              : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+          }">
+          ${cat}
+        </button>
+      `).join('');
+    }
+
+    function selectCategory(cat) {
+      selectedCategory = cat;
+      renderCategories();
+      renderMenu();
+    }
+
+    function renderMenu() {
+      const query = document.getElementById('searchInput').value.toLowerCase().trim();
+      const filtered = allProducts.filter(p => {
+        const matchesCat = selectedCategory === 'TÜMÜ' || p.kategori === selectedCategory;
+        const matchesQuery = p.ad.toLowerCase().includes(query) || (p.aciklama && p.aciklama.toLowerCase().includes(query));
+        return matchesCat && matchesQuery;
+      });
+
+      const container = document.getElementById('menuContainer');
+      if (filtered.length === 0) {
+        container.innerHTML = `<p class="text-center text-stone-500 py-10 text-sm">Aradığınız kriterde ürün bulunamadı.</p>`;
+        return;
+      }
+
+      // Kategorilere göre grupla
+      const grouped = filtered.reduce((acc, item) => {
+        acc[item.kategori] = acc[item.kategori] || [];
+        acc[item.kategori].push(item);
+        return acc;
+      }, {});
+
+      container.innerHTML = Object.entries(grouped).map(([category, items]) => `
+        <section>
+          <h2 class="text-base font-bold text-stone-900 mb-3 pb-1 border-b border-stone-200 flex items-center justify-between">
+            <span>${category}</span>
+            <span class="text-xs font-normal text-stone-400">${items.length} ürün</span>
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            ${items.map(item => `
+              <div class="bg-white rounded-2xl p-3 border border-stone-100 shadow-sm flex gap-3.5 items-center">
+                <div class="w-24 h-24 rounded-xl bg-stone-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                  ${item.gorsel_url 
+                    ? `<img src="${item.gorsel_url}" alt="${item.ad}" loading="lazy" class="w-full h-full object-cover" />`
+                    : `<span class="text-xs font-bold text-stone-300 text-center px-1">LİMCERA</span>`
+                  }
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h3 class="font-semibold text-stone-900 text-sm leading-snug truncate">${item.ad}</h3>
+                  ${item.aciklama ? `<p class="text-xs text-stone-500 mt-0.5 line-clamp-2">${item.aciklama}</p>` : ''}
+                  <div class="mt-2 font-bold text-amber-700 text-sm">${Number(item.fiyat).toLocaleString('tr-TR')} ₺</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </section>
+      `).join('');
+    }
+
+    document.getElementById('searchInput').addEventListener('input', renderMenu);
+    fetchMenu();
+  </script>
+</body>
+</html>

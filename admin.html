@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Limcera Menü Yönetim Paneli</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-stone-100 text-stone-800 font-sans antialiased">
+
+  <!-- GİRİŞ EKRANI -->
+  <div id="loginSection" class="min-h-screen flex items-center justify-center px-4">
+    <div class="bg-white p-6 rounded-2xl shadow-md w-full max-w-sm border border-stone-200">
+      <h1 class="text-xl font-bold text-stone-900 mb-1">Limcera Admin</h1>
+      <p class="text-xs text-stone-500 mb-5">Menü ve görsel yönetimi için giriş yapın</p>
+      <form id="loginForm" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold mb-1">E-posta</label>
+          <input type="email" id="email" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-amber-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1">Şifre</label>
+          <input type="password" id="password" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-amber-500" />
+        </div>
+        <button type="submit" class="w-full bg-stone-900 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-stone-800 transition">Giriş Yap</button>
+      </form>
+      <p id="loginError" class="text-xs text-red-600 mt-3 hidden"></p>
+    </div>
+  </div>
+
+  <!-- YÖNETİM PANELİ -->
+  <div id="adminSection" class="hidden pb-16">
+    <header class="bg-white border-b border-stone-200 sticky top-0 z-20">
+      <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div>
+          <h1 class="font-bold text-stone-900">Trabzon Limcera • Menü Yönetimi</h1>
+          <p class="text-xs text-stone-500" id="userEmail"></p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="openNewModal()" class="bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700">+ Yeni Ürün</button>
+          <button onclick="logout()" class="bg-stone-200 text-stone-700 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-stone-300">Çıkış</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 pt-5">
+      <!-- Filtre -->
+      <div class="flex flex-col sm:flex-row gap-3 mb-5">
+        <input type="text" id="adminSearch" placeholder="Ürün adı ile filtrele..." oninput="renderAdminList()"
+          class="flex-1 bg-white px-3.5 py-2 rounded-xl border border-stone-200 text-sm outline-none focus:border-amber-500" />
+        <select id="adminCatFilter" onchange="renderAdminList()" class="bg-white px-3.5 py-2 rounded-xl border border-stone-200 text-sm outline-none">
+          <option value="TÜMÜ">Tüm Kategoriler</option>
+        </select>
+      </div>
+
+      <!-- Ürün Kartları -->
+      <div id="adminList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </main>
+  </div>
+
+  <!-- YENİ ÜRÜN EKLEME PENCERESİ -->
+  <div id="newModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl p-5 w-full max-w-md">
+      <h2 class="font-bold text-base mb-4">Yeni Ürün Ekle</h2>
+      <form id="newProductForm" class="space-y-3">
+        <input type="text" id="newCat" placeholder="Kategori (Örn: TATLI)" required class="w-full px-3 py-2 border rounded-xl text-sm uppercase" />
+        <input type="text" id="newName" placeholder="Ürün Adı" required class="w-full px-3 py-2 border rounded-xl text-sm" />
+        <input type="text" id="newDesc" placeholder="Açıklama (İsteğe bağlı)" class="w-full px-3 py-2 border rounded-xl text-sm" />
+        <input type="number" step="0.01" id="newPrice" placeholder="Fiyat (KDV Dahil TL)" required class="w-full px-3 py-2 border rounded-xl text-sm" />
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeNewModal()" class="px-4 py-2 text-xs font-semibold text-stone-600">İptal</button>
+          <button type="submit" class="px-4 py-2 bg-stone-900 text-white rounded-xl text-xs font-semibold">Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // 1. BURAYA KENDİ SUPABASE BİLGİLERİNİZİ GİRİN
+    const SUPABASE_URL = 'https://SENIN-PROJE-ID.supabase.co';
+    const SUPABASE_ANON_KEY = 'SENIN-ANON-PUBLIC-KEYIN';
+    const BUCKET_NAME = 'menu-gorselleri';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let products = [];
+
+    // Oturum kontrolü
+    async function checkSession() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('adminSection').classList.remove('hidden');
+        document.getElementById('userEmail').textContent = session.user.email;
+        loadProducts();
+      }
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) {
+        const errEl = document.getElementById('loginError');
+        errEl.textContent = 'Giriş başarısız: ' + error.message;
+        errEl.classList.remove('hidden');
+      } else {
+        checkSession();
+      }
+    });
+
+    async function logout() {
+      await sb.auth.signOut();
+      location.reload();
+    }
+
+    async function loadProducts() {
+      const { data, error } = await sb.from('urunler').select('*').order('kategori').order('id');
+      if (!error) {
+        products = data;
+        const cats = [...new Set(products.map(p => p.kategori))];
+        const select = document.getElementById('adminCatFilter');
+        select.innerHTML = `<option value="TÜMÜ">Tüm Kategoriler (${products.length})</option>` + 
+          cats.map(c => `<option value="${c}">${c}</option>`).join('');
+        renderAdminList();
+      }
+    }
+
+    function renderAdminList() {
+      const q = document.getElementById('adminSearch').value.toLowerCase();
+      const cat = document.getElementById('adminCatFilter').value;
+      const filtered = products.filter(p => 
+        (cat === 'TÜMÜ' || p.kategori === cat) && p.ad.toLowerCase().includes(q)
+      );
+
+      document.getElementById('adminList').innerHTML = filtered.map(p => `
+        <div class="bg-white p-4 rounded-2xl border ${p.aktif_mi ? 'border-stone-200' : 'border-red-200 bg-red-50/30'} shadow-sm flex gap-4">
+          <!-- Görsel ve Yükleme Alanı -->
+          <div class="w-24 flex-shrink-0 flex flex-col items-center gap-2">
+            <div class="w-24 h-24 rounded-xl bg-stone-100 overflow-hidden border border-stone-200 flex items-center justify-center relative">
+              ${p.gorsel_url 
+                ? `<img id="img-${p.id}" src="${p.gorsel_url}" class="w-full h-full object-cover" />` 
+                : `<span id="img-${p.id}" class="text-[10px] text-stone-400">Görsel Yok</span>`
+              }
+            </div>
+            <label class="w-full text-center cursor-pointer bg-stone-900 text-white text-[11px] font-medium py-1.5 px-2 rounded-lg hover:bg-stone-700 transition">
+              Fotoğraf Seç
+              <input type="file" accept="image/*" class="hidden" onchange="uploadImage(event, ${p.id})" />
+            </label>
+          </div>
+
+          <!-- Bilgi Düzenleme Alanı -->
+          <div class="flex-1 space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded">${p.kategori}</span>
+              <label class="flex items-center gap-1.5 text-xs cursor-pointer">
+                <input type="checkbox" ${p.aktif_mi ? 'checked' : ''} onchange="toggleActive(${p.id}, this.checked)" class="rounded text-amber-600" />
+                <span>${p.aktif_mi ? 'Yayında' : 'Gizli'}</span>
+              </label>
+            </div>
+            
+            <input type="text" id="name-${p.id}" value="${p.ad}" class="w-full font-semibold text-sm border-b border-transparent focus:border-stone-300 outline-none py-0.5" />
+            <input type="text" id="desc-${p.id}" value="${p.aciklama || ''}" placeholder="Açıklama ekle..." class="w-full text-xs text-stone-500 border-b border-transparent focus:border-stone-300 outline-none py-0.5" />
+            
+            <div class="flex items-center justify-between pt-1">
+              <div class="flex items-center gap-1">
+                <input type="number" step="0.01" id="price-${p.id}" value="${p.fiyat}" class="w-24 px-2 py-1 border rounded-lg text-sm font-bold text-stone-900" />
+                <span class="text-xs font-semibold">₺</span>
+              </div>
+              <button onclick="saveProduct(${p.id})" id="btn-${p.id}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-emerald-700 transition">
+                Kaydet
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Görseli tarayıcıda sıkıştırıp WebP yapma fonksiyonu (Max 800px)
+    function compressImageToWebP(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 800;
+            const scaleSize = img.width > MAX_WIDTH ? MAX_WIDTH / img.width : 1;
+            canvas.width = img.width * scaleSize;
+            canvas.height = img.height * scaleSize;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob((blob) => resolve(blob), 'image/webp', 0.82);
+          };
+          img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function uploadImage(event, productId) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const btn = document.getElementById(`btn-${productId}`);
+      btn.textContent = 'Yükleniyor...';
+
+      const webpBlob = await compressImageToWebP(file);
+      const fileName = `urun-${productId}-${Date.now()}.webp`;
+
+      const { error: uploadError } = await sb.storage
+        .from(BUCKET_NAME)
+        .upload(fileName, webpBlob, { contentType: 'image/webp', upsert: true });
+
+      if (uploadError) {
+        alert('Fotoğraf yüklenemedi: ' + uploadError.message);
+        btn.textContent = 'Kaydet';
+        return;
+      }
+
+      const { data: { publicUrl } } = sb.storage.from(BUCKET_NAME).getPublicUrl(fileName);
+
+      await sb.from('urunler').update({ gorsel_url: publicUrl }).eq('id', productId);
+      btn.textContent = 'Kaydet';
+      loadProducts();
+    }
+
+    async function saveProduct(id) {
+      const btn = document.getElementById(`btn-${id}`);
+      btn.textContent = '...';
+      const ad = document.getElementById(`name-${id}`).value;
+      const aciklama = document.getElementById(`desc-${id}`).value;
+      const fiyat = parseFloat(document.getElementById(`price-${id}`).value);
+
+      const { error } = await sb.from('urunler').update({ ad, aciklama, fiyat }).eq('id', id);
+      if (error) alert('Hata: ' + error.message);
+      else {
+        btn.textContent = 'Kaydedildi ✓';
+        setTimeout(() => btn.textContent = 'Kaydet', 1500);
+      }
+    }
+
+    async function toggleActive(id, status) {
+      await sb.from('urunler').update({ aktif_mi: status }).eq('id', id);
+      loadProducts();
+    }
+
+    function openNewModal() { document.getElementById('newModal').classList.replace('hidden', 'flex'); }
+    function closeNewModal() { document.getElementById('newModal').classList.replace('flex', 'hidden'); }
+
+    document.getElementById('newProductForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const kategori = document.getElementById('newCat').value.toUpperCase().trim();
+      const ad = document.getElementById('newName').value.trim();
+      const aciklama = document.getElementById('newDesc').value.trim();
+      const fiyat = parseFloat(document.getElementById('newPrice').value);
+
+      const { error } = await sb.from('urunler').insert([{ kategori, ad, aciklama, fiyat, aktif_mi: true }]);
+      if (!error) {
+        closeNewModal();
+        e.target.reset();
+        loadProducts();
+      } else {
+        alert('Hata: ' + error.message);
+      }
+    });
+
+    checkSession();
+  </script>
+</body>
+</html>
