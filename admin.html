@@ -187,15 +187,30 @@
       }
     }
 
+    function normalizeTR(text) {
+      if (!text) return '';
+      return text
+        .toLocaleLowerCase('tr-TR')
+        .replace(/\u0307/g, '')
+        .replace(/ı/g, 'i')
+        .replace(/ğ/g, 'g')
+        .replace(/ü/g, 'u')
+        .replace(/ş/g, 's')
+        .replace(/ö/g, 'o')
+        .replace(/ç/g, 'c');
+    }
+
     function renderAdminList() {
-      const q = document.getElementById('adminSearch').value.toLowerCase();
+      const q = normalizeTR(document.getElementById('adminSearch').value).trim();
       const cat = document.getElementById('adminCatFilter').value;
       const filtered = products.filter(p => {
         const matchesCat =
           cat === 'TÜMÜ' ? true :
           cat === 'ONERILENLER' ? p.onerilen_mi === true :
           p.kategori === cat;
-        const matchesQuery = p.ad.toLowerCase().includes(q) || (p.urun_kodu && p.urun_kodu.toLowerCase().includes(q));
+        const matchesQuery =
+          normalizeTR(p.ad).includes(q) ||
+          (p.urun_kodu && normalizeTR(p.urun_kodu).includes(q));
         return matchesCat && matchesQuery;
       });
 
