@@ -266,6 +266,29 @@
       });
     }
 
+    function processTransparentLogoPNG(file, maxWidth = 400) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onerror = () => resolve(file);
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onerror = () => resolve(file);
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const scaleSize = img.width > maxWidth ? maxWidth / img.width : 1;
+            canvas.width = img.width * scaleSize;
+            canvas.height = img.height * scaleSize;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob((blob) => resolve(blob || file), 'image/png');
+          };
+          img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
     async function uploadSiteLogo(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -274,11 +297,11 @@
       const originalHtml = label.innerHTML;
       label.innerHTML = '<span>Yükleniyor...</span>';
 
-      const webpBlob = await compressImageToWebP(file, 400);
+      const pngBlob = await processTransparentLogoPNG(file, 400);
       const { error } = await sb.storage
         .from(BUCKET_NAME)
-        .upload('site-logo.webp', webpBlob, {
-          contentType: webpBlob.type || 'image/webp',
+        .upload('site-logo.png', pngBlob, {
+          contentType: 'image/png',
           cacheControl: '60',
           upsert: true
         });
@@ -289,7 +312,7 @@
       if (error) {
         alert('Logo yüklenemedi: ' + error.message);
       } else {
-        alert('Logo başarıyla güncellendi! Ana sayfayı yenilediğinizde sol üstte görünecektir.');
+        alert('Şeffaf PNG logo başarıyla yüklendi! Ana sayfayı yenilediğinizde sol üstte yuvarlak olarak görünecektir.');
       }
     }
 
