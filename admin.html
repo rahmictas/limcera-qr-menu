@@ -38,6 +38,10 @@
           <p class="text-xs text-stone-500" id="userEmail"></p>
         </div>
         <div class="flex flex-wrap gap-2">
+          <label id="bannerUploadLabel" class="cursor-pointer bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-emerald-800 transition flex items-center gap-1.5">
+            <span>🎨 Kapak Görseli</span>
+            <input type="file" accept="image/*" class="hidden" onchange="uploadSiteBanner(event)" />
+          </label>
           <label id="logoUploadLabel" class="cursor-pointer bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-purple-700 transition flex items-center gap-1.5">
             <span>🖼️ Logo Yükle</span>
             <input type="file" accept="image/*" class="hidden" onchange="uploadSiteLogo(event)" />
@@ -244,7 +248,7 @@
       `).join('');
     }
 
-    function compressImageToWebP(file, maxWidth = 1000) {
+    function compressImageToWebP(file, maxWidth = 1000, quality = 0.88) {
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onerror = () => resolve(file);
@@ -258,7 +262,7 @@
             canvas.height = img.height * scaleSize;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            canvas.toBlob((blob) => resolve(blob || file), 'image/webp', 0.88);
+            canvas.toBlob((blob) => resolve(blob || file), 'image/webp', quality);
           };
           img.src = event.target.result;
         };
@@ -287,6 +291,33 @@
         };
         reader.readAsDataURL(file);
       });
+    }
+
+    async function uploadSiteBanner(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const label = document.getElementById('bannerUploadLabel');
+      const originalHtml = label.innerHTML;
+      label.innerHTML = '<span>Yükleniyor...</span>';
+
+      const webpBlob = await compressImageToWebP(file, 1200, 0.90);
+      const { error } = await sb.storage
+        .from(BUCKET_NAME)
+        .upload('site-banner.webp', webpBlob, {
+          contentType: webpBlob.type || 'image/webp',
+          cacheControl: '60',
+          upsert: true
+        });
+
+      label.innerHTML = originalHtml;
+      event.target.value = '';
+
+      if (error) {
+        alert('Kapak görseli yüklenemedi: ' + error.message);
+      } else {
+        alert('Kapak görseli başarıyla yüklendi! Müşteri sayfasını yenilediğinizde en üstte görünecektir.');
+      }
     }
 
     async function uploadSiteLogo(event) {
@@ -323,7 +354,7 @@
       const btn = document.getElementById(`btn-${productId}`);
       btn.textContent = 'Yükleniyor...';
 
-      const webpBlob = await compressImageToWebP(file, 1000);
+      const webpBlob = await compressImageToWebP(file, 1000, 0.88);
       const isWebp = webpBlob.type === 'image/webp';
       const fileName = `urun-${productId}-${Date.now()}.${isWebp ? 'webp' : 'jpg'}`;
 
@@ -369,7 +400,7 @@
     async function toggleFeatured(id, status) {
       const { error } = await sb.from('urunler').update({ onerilen_mi: status }).eq('id', id);
       if (error) {
-        alert('Önerilen durumu güncellenemedi (SQL kodunu çalıştırdığınızdan emin olun): ' + error.message);
+        alert('Önerilen durumu güncellenemedi: ' + error.message);
       }
       loadProducts();
     }
