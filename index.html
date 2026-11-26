@@ -223,10 +223,18 @@
     <main id="productDetailContent" class="max-w-3xl mx-auto px-4 pt-5 pb-12"></main>
   </div>
 
+  <!-- EN ÜSTE DÖN BUTONU -->
+  <button id="scrollTopBtn" onclick="scrollToTop()" aria-label="En Üste Dön"
+    class="fixed bottom-5 right-5 z-40 p-3 rounded-full bg-stone-900/90 dark:bg-amber-500/95 text-white dark:text-stone-950 shadow-lg backdrop-blur border border-stone-700/40 dark:border-amber-300/40 opacity-0 pointer-events-none translate-y-3 transition-all duration-200 hover:scale-105 active:scale-95">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/>
+    </svg>
+  </button>
+
   <script>
     // BURAYA MEVCUT SUPABASE ANON KEY BİLGİNİZİ YAPIŞTIRIN
     const SUPABASE_URL = 'https://pmhqpdrhlyncwsyehuvl.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtaHFwZHJobHluY3dzeWVodXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU2MTY3NTMsImV4cCI6MjExMTE5Mjc1M30.uJRs7wr232jW0sYVQUuXGkCeLcYFOqvBE5po7VyYpjs';
+    const SUPABASE_ANON_KEY = 'BURAYA_MEVCUT_ANON_KEYINIZI_YAPISTIRIN';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let allProducts = [];
@@ -242,6 +250,23 @@
 
     function scrollFeatured(amount) {
       document.getElementById('featuredTrack').scrollBy({ left: amount, behavior: 'smooth' });
+    }
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function updateScrollTopButton() {
+      const btn = document.getElementById('scrollTopBtn');
+      if (!btn) return;
+      const isMenuVisible = !document.getElementById('menuView').classList.contains('hidden');
+      if (isMenuVisible && window.scrollY > 320) {
+        btn.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-3');
+        btn.classList.add('opacity-100', 'translate-y-0');
+      } else {
+        btn.classList.add('opacity-0', 'pointer-events-none', 'translate-y-3');
+        btn.classList.remove('opacity-100', 'translate-y-0');
+      }
     }
 
     function scrollToWifi() {
@@ -562,6 +587,7 @@
       document.getElementById('menuView').classList.add('hidden');
       document.getElementById('productDetailView').classList.remove('hidden');
       window.scrollTo(0, 0);
+      updateScrollTopButton();
     }
 
     function showMenuView() {
@@ -569,6 +595,7 @@
       document.getElementById('productDetailView').classList.add('hidden');
       document.getElementById('menuView').classList.remove('hidden');
       window.scrollTo(0, lastScrollY);
+      updateScrollTopButton();
     }
 
     function closeProduct() {
@@ -593,6 +620,7 @@
       showMenuView();
     }
 
+    window.addEventListener('scroll', updateScrollTopButton, { passive: true });
     window.addEventListener('popstate', handleInitialHash);
     document.getElementById('searchInput').addEventListener('input', renderMenu);
     fetchSiteSettings();
