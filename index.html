@@ -26,11 +26,11 @@
 
   <!-- ANA MENÜ GÖRÜNÜMÜ -->
   <div id="menuView">
-    <!-- Üst Başlık, Yuvarlak Logo ve Arama -->
+    <!-- Üst Başlık, Yuvarlak Şeffaf Logo ve Arama -->
     <header class="sticky top-0 z-30 bg-white/95 dark:bg-stone-900/95 backdrop-blur border-b border-stone-200 dark:border-stone-800 shadow-sm transition-colors">
       <div class="max-w-3xl mx-auto px-4 pt-3.5 pb-3">
         <div class="flex items-center justify-between mb-3 gap-2">
-          <!-- Sol Üst Yuvarlak Şeffaf Logo ve İşletme Adı -->
+          <!-- Sol Üst Yuvarlak Logo ve İşletme Adı -->
           <div class="flex items-center gap-3 min-w-0">
             <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden border border-stone-200/80 dark:border-stone-700/80 shadow-sm">
               <img id="siteLogoImg"
@@ -46,7 +46,7 @@
             </div>
           </div>
 
-          <!-- Sağ Üst KDV Rozeti ve Tema Butonu -->
+          <!-- Sağ Üst KDV Rozeti ve Karanlık Mod Butonu -->
           <div class="flex items-center gap-2 flex-shrink-0">
             <span class="hidden sm:inline-block text-xs font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 px-2.5 py-1 rounded-full">
               KDV Dahildir
@@ -63,7 +63,7 @@
           </div>
         </div>
 
-        <!-- Arama Kutusu -->
+        <!-- Türkçe Uyumlu Arama Kutusu -->
         <div class="relative mb-3">
           <input type="text" id="searchInput" placeholder="Ürün veya lezzet ara..."
             class="w-full pl-9 pr-4 py-2 bg-stone-100 dark:bg-stone-800 border border-transparent focus:border-amber-500 focus:bg-white dark:focus:bg-stone-900 rounded-xl text-sm text-stone-900 dark:text-stone-100 placeholder-stone-400 outline-none transition" />
@@ -77,9 +77,9 @@
       </div>
     </header>
 
-    <!-- İçerik Alanı -->
+    <!-- Ana İçerik Alanı -->
     <main class="max-w-3xl mx-auto px-4 pt-4">
-      <!-- KARŞILAMA KAPAK GÖRSELİ (BANNER) -->
+      <!-- Karşılama Kapak Görseli (Banner) -->
       <section id="heroBannerSection" class="mb-6">
         <div class="w-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-md border border-stone-200/80 dark:border-stone-800 bg-emerald-950">
           <img id="siteBannerImg"
@@ -92,7 +92,7 @@
 
       <div id="loading" class="text-center py-12 text-stone-500 dark:text-stone-400 text-sm">Menü yükleniyor...</div>
 
-      <!-- YATAY KAYDIRILABİLİR ÖNERİLEN ÜRÜNLER ŞERİDİ -->
+      <!-- Yatay Kaydırılabilir Önerilen Ürünler Şeridi -->
       <section id="featuredSection" class="hidden mb-7">
         <div class="flex items-center justify-between mb-2.5">
           <div class="flex items-center gap-1.5">
@@ -114,7 +114,7 @@
         <div id="featuredTrack" class="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-1"></div>
       </section>
 
-      <!-- Ana Menü Listesi -->
+      <!-- Kategorilere Göre Menü Listesi -->
       <div id="menuContainer" class="space-y-8"></div>
     </main>
   </div>
@@ -166,6 +166,19 @@
       document.getElementById('featuredTrack').scrollBy({ left: amount, behavior: 'smooth' });
     }
 
+    function normalizeTR(text) {
+      if (!text) return '';
+      return text
+        .toLocaleLowerCase('tr-TR')
+        .replace(/\u0307/g, '')
+        .replace(/ı/g, 'i')
+        .replace(/ğ/g, 'g')
+        .replace(/ü/g, 'u')
+        .replace(/ş/g, 's')
+        .replace(/ö/g, 'o')
+        .replace(/ç/g, 'c');
+    }
+
     async function fetchMenu() {
       const { data, error } = await sb
         .from('urunler')
@@ -189,19 +202,6 @@
       handleInitialHash();
     }
 
-    function normalizeTR(text) {
-      if (!text) return '';
-      return text
-        .toLocaleLowerCase('tr-TR')
-        .replace(/\u0307/g, '')
-        .replace(/ı/g, 'i')
-        .replace(/ğ/g, 'g')
-        .replace(/ü/g, 'u')
-        .replace(/ş/g, 's')
-        .replace(/ö/g, 'o')
-        .replace(/ç/g, 'c');
-    }
-
     function renderFeatured() {
       const query = normalizeTR(document.getElementById('searchInput').value).trim();
       const bannerSection = document.getElementById('heroBannerSection');
@@ -209,39 +209,6 @@
         if (query.length > 0) bannerSection.classList.add('hidden');
         else bannerSection.classList.remove('hidden');
       }
-
-      const featured = allProducts.filter(p => p.onerilen_mi === true);
-      const section = document.getElementById('featuredSection');
-      const track = document.getElementById('featuredTrack');
-
-      if (featured.length === 0 || query.length > 0) {
-        section.classList.add('hidden');
-        return;
-      }
-
-      section.classList.remove('hidden');
-      track.innerHTML = featured.map(item => `
-        <div onclick="openProduct(${item.id})"
-          class="w-44 sm:w-48 flex-shrink-0 snap-start cursor-pointer group bg-white dark:bg-stone-900 rounded-2xl overflow-hidden border border-stone-200/80 dark:border-stone-800 shadow-sm hover:border-amber-400 dark:hover:border-amber-600 transition">
-          <div class="relative w-full h-28 bg-stone-100 dark:bg-stone-800 overflow-hidden flex items-center justify-center">
-            ${item.gorsel_url
-              ? `<img src="${item.gorsel_url}" alt="${item.ad}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" />`
-              : `<span class="text-xs font-bold text-stone-300 dark:text-stone-600">LİMCERA</span>`
-            }
-            <span class="absolute top-2 left-2 bg-amber-500 text-stone-950 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-              ★ Önerilen
-            </span>
-          </div>
-          <div class="p-2.5">
-            <div class="text-[10px] font-semibold text-stone-400 dark:text-stone-500 truncate">${item.kategori}</div>
-            <h3 class="font-bold text-xs text-stone-900 dark:text-stone-100 truncate mt-0.5">${item.ad}</h3>
-            <div class="mt-1.5 font-extrabold text-sm text-amber-700 dark:text-amber-400">
-              ${Number(item.fiyat).toLocaleString('tr-TR')} ₺
-            </div>
-          </div>
-        </div>
-      `).join('');
-    }
 
       const featured = allProducts.filter(p => p.onerilen_mi === true);
       const section = document.getElementById('featuredSection');
@@ -299,10 +266,12 @@
 
     function renderMenu() {
       renderFeatured();
-      const query = document.getElementById('searchInput').value.toLowerCase().trim();
+      const query = normalizeTR(document.getElementById('searchInput').value).trim();
       const filtered = allProducts.filter(p => {
         const matchesCat = selectedCategory === 'TÜMÜ' || p.kategori === selectedCategory;
-        const matchesQuery = p.ad.toLowerCase().includes(query) || (p.aciklama && p.aciklama.toLowerCase().includes(query));
+        const matchesQuery =
+          normalizeTR(p.ad).includes(query) ||
+          (p.aciklama && normalizeTR(p.aciklama).includes(query));
         return matchesCat && matchesQuery;
       });
 
