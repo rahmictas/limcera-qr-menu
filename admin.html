@@ -167,11 +167,11 @@
   </div>
 
   <script>
-    // BURAYA MEVCUT SUPABASE ANON KEY BİLGİNİZİ YAPIŞTIRIN
+    // BURAYA SUPABASE PUBLISHABLE KEY (sb_publishable_...) BİLGİNİZİ YAPIŞTIRIN
     const SUPABASE_URL = 'https://pmhqpdrhlyncwsyehuvl.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtaHFwZHJobHluY3dzeWVodXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU2MTY3NTMsImV4cCI6MjExMTE5Mjc1M30.uJRs7wr232jW0sYVQUuXGkCeLcYFOqvBE5po7VyYpjs';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_H6uShglr53-7QsiAW_xQXQ_Dl3ijz-K';
     const BUCKET_NAME = 'menu-gorselleri';
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     let products = [];
     let parsedReportRows = [];
@@ -240,7 +240,7 @@
       btn.textContent = 'Kaydet';
 
       if (error) {
-        alert('Ayarlar kaydedilemedi (SQL tablosunu oluşturduğunuzdan emin olun): ' + error.message);
+        alert('Ayarlar kaydedilemedi: ' + error.message);
       } else {
         closeSettingsModal();
         alert('Wi-Fi ve Google Yorum ayarları güncellendi!');
