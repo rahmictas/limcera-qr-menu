@@ -3,571 +3,400 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Limcera Menü Yönetim Paneli</title>
+  <title>Trabzon Limcera | Dijital Menü</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    };
+    if (
+      localStorage.getItem('limcera-theme') === 'dark' ||
+      (!localStorage.getItem('limcera-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    ) {
+      document.documentElement.classList.add('dark');
+    }
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
 </head>
-<body class="bg-stone-100 text-stone-800 font-sans antialiased">
+<body class="bg-stone-50 dark:bg-stone-950 text-stone-800 dark:text-stone-100 font-sans antialiased pb-14 transition-colors duration-200">
 
-  <!-- GİRİŞ EKRANI -->
-  <div id="loginSection" class="min-h-screen flex items-center justify-center px-4">
-    <div class="bg-white p-6 rounded-2xl shadow-md w-full max-w-sm border border-stone-200">
-      <h1 class="text-xl font-bold text-stone-900 mb-1">Limcera Admin</h1>
-      <p class="text-xs text-stone-500 mb-5">Menü ve görsel yönetimi için giriş yapın</p>
-      <form id="loginForm" class="space-y-3">
-        <div>
-          <label class="block text-xs font-semibold mb-1">E-posta</label>
-          <input type="email" id="email" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-amber-500" />
-        </div>
-        <div>
-          <label class="block text-xs font-semibold mb-1">Şifre</label>
-          <input type="password" id="password" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-amber-500" />
-        </div>
-        <button type="submit" class="w-full bg-stone-900 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-stone-800 transition">Giriş Yap</button>
-      </form>
-      <p id="loginError" class="text-xs text-red-600 mt-3 hidden"></p>
-    </div>
-  </div>
+  <!-- ANA MENÜ GÖRÜNÜMÜ -->
+  <div id="menuView">
+    <!-- Üst Başlık, Logo ve Arama -->
+    <header class="sticky top-0 z-30 bg-white/95 dark:bg-stone-900/95 backdrop-blur border-b border-stone-200 dark:border-stone-800 shadow-sm transition-colors">
+      <div class="max-w-3xl mx-auto px-4 pt-3.5 pb-3">
+        <div class="flex items-center justify-between mb-3 gap-2">
+          <!-- Sol Üst Logo ve İşletme Adı -->
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-11 h-11 rounded-xl bg-stone-900 dark:bg-amber-500 text-white dark:text-stone-950 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm border border-stone-200 dark:border-stone-700">
+              <img id="siteLogoImg"
+                src="https://pmhqpdrhlyncwsyehuvl.supabase.co/storage/v1/object/public/menu-gorselleri/site-logo.webp"
+                alt="Trabzon Limcera Logo"
+                onerror="this.style.display='none'; document.getElementById('siteLogoFallback').classList.remove('hidden');"
+                class="w-full h-full object-contain bg-white dark:bg-stone-900 p-0.5" />
+              <span id="siteLogoFallback" class="hidden font-extrabold text-base tracking-tighter">TL</span>
+            </div>
+            <div class="min-w-0">
+              <h1 class="text-lg sm:text-xl font-bold tracking-tight text-stone-900 dark:text-white truncate">TRABZON LİMCERA</h1>
+              <p class="text-xs text-stone-500 dark:text-stone-400 truncate">Hoş Geldiniz • Dijital Menü</p>
+            </div>
+          </div>
 
-  <!-- YÖNETİM PANELİ -->
-  <div id="adminSection" class="hidden pb-16">
-    <header class="bg-white border-b border-stone-200 sticky top-0 z-20">
-      <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 class="font-bold text-stone-900">Trabzon Limcera • Menü Yönetimi</h1>
-          <p class="text-xs text-stone-500" id="userEmail"></p>
+          <!-- Sağ Üst KDV Rozeti ve Tema Butonu -->
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <span class="hidden sm:inline-block text-xs font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 px-2.5 py-1 rounded-full">
+              KDV Dahildir
+            </span>
+            <button onclick="toggleTheme()" aria-label="Tema Değiştir"
+              class="p-2 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-amber-400 hover:bg-stone-200 dark:hover:bg-stone-700 transition">
+              <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+              </svg>
+              <svg class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+              </svg>
+            </button>
+          </div>
         </div>
-        <div class="flex flex-wrap gap-2">
-          <label class="cursor-pointer bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-700 transition flex items-center gap-1.5">
-            <span>📄 Rapor Yükle (.html)</span>
-            <input type="file" id="reportFileInput" accept=".html,.htm" class="hidden" onchange="handleReportUpload(event)" />
-          </label>
-          <button onclick="openNewModal()" class="bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700">+ Yeni Ürün</button>
-          <button onclick="logout()" class="bg-stone-200 text-stone-700 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-stone-300">Çıkış</button>
+
+        <!-- Arama Kutusu -->
+        <div class="relative mb-3">
+          <input type="text" id="searchInput" placeholder="Ürün veya lezzet ara..."
+            class="w-full pl-9 pr-4 py-2 bg-stone-100 dark:bg-stone-800 border border-transparent focus:border-amber-500 focus:bg-white dark:focus:bg-stone-900 rounded-xl text-sm text-stone-900 dark:text-stone-100 placeholder-stone-400 outline-none transition" />
+          <svg class="w-4 h-4 text-stone-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
         </div>
+
+        <!-- Kategori Sekmeleri -->
+        <div id="categoryTabs" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div>
       </div>
     </header>
 
-    <main class="max-w-5xl mx-auto px-4 pt-5">
-      <!-- Filtre -->
-      <div class="flex flex-col sm:flex-row gap-3 mb-5">
-        <input type="text" id="adminSearch" placeholder="Ürün adı veya kodu ile filtrele..." oninput="renderAdminList()"
-          class="flex-1 bg-white px-3.5 py-2 rounded-xl border border-stone-200 text-sm outline-none focus:border-amber-500" />
-        <select id="adminCatFilter" onchange="renderAdminList()" class="bg-white px-3.5 py-2 rounded-xl border border-stone-200 text-sm outline-none">
-          <option value="TÜMÜ">Tüm Kategoriler</option>
-        </select>
-      </div>
+    <!-- İçerik Alanı -->
+    <main class="max-w-3xl mx-auto px-4 pt-5">
+      <div id="loading" class="text-center py-12 text-stone-500 dark:text-stone-400 text-sm">Menü yükleniyor...</div>
 
-      <!-- Ürün Kartları -->
-      <div id="adminList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      <!-- YATAY KAYDIRILABİLİR ÖNERİLEN ÜRÜNLER ŞERİDİ -->
+      <section id="featuredSection" class="hidden mb-7">
+        <div class="flex items-center justify-between mb-2.5">
+          <div class="flex items-center gap-1.5">
+            <span class="text-amber-500 text-base">★</span>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-stone-900 dark:text-stone-100">Önerilen Lezzetler</h2>
+          </div>
+          <div class="hidden sm:flex items-center gap-1">
+            <button onclick="scrollFeatured(-220)" aria-label="Sola Kaydır"
+              class="p-1 rounded-lg bg-stone-200/70 dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-300 dark:hover:bg-stone-700 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <button onclick="scrollFeatured(220)" aria-label="Sağa Kaydır"
+              class="p-1 rounded-lg bg-stone-200/70 dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-300 dark:hover:bg-stone-700 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="featuredTrack" class="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-1"></div>
+      </section>
+
+      <!-- Ana Menü Listesi -->
+      <div id="menuContainer" class="space-y-8"></div>
     </main>
   </div>
 
-  <!-- YENİ ÜRÜN EKLEME PENCERESİ -->
-  <div id="newModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl p-5 w-full max-w-md">
-      <h2 class="font-bold text-base mb-4">Yeni Ürün Ekle</h2>
-      <form id="newProductForm" class="space-y-3">
-        <input type="text" id="newCode" placeholder="Ürün Kodu (Örn: 153.196 - İsteğe bağlı)" class="w-full px-3 py-2 border rounded-xl text-sm" />
-        <input type="text" id="newCat" placeholder="Kategori (Örn: TATLI)" required class="w-full px-3 py-2 border rounded-xl text-sm uppercase" />
-        <input type="text" id="newName" placeholder="Ürün Adı" required class="w-full px-3 py-2 border rounded-xl text-sm" />
-        <input type="text" id="newDesc" placeholder="Açıklama (İsteğe bağlı)" class="w-full px-3 py-2 border rounded-xl text-sm" />
-        <input type="number" step="0.01" id="newPrice" placeholder="Fiyat (KDV Dahil TL)" required class="w-full px-3 py-2 border rounded-xl text-sm" />
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" onclick="closeNewModal()" class="px-4 py-2 text-xs font-semibold text-stone-600">İptal</button>
-          <button type="submit" class="px-4 py-2 bg-stone-900 text-white rounded-xl text-xs font-semibold">Kaydet</button>
-        </div>
-      </form>
-    </div>
-  </div>
+  <!-- ÜRÜN DETAY SAYFASI -->
+  <div id="productDetailView" class="hidden min-h-screen bg-stone-50 dark:bg-stone-950">
+    <header class="sticky top-0 z-30 bg-white/95 dark:bg-stone-900/95 backdrop-blur border-b border-stone-200 dark:border-stone-800">
+      <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+        <button onclick="closeProduct()"
+          class="flex items-center gap-2 text-sm font-semibold text-stone-800 dark:text-stone-100 hover:text-amber-700 dark:hover:text-amber-400 transition py-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          <span>Menüye Dön</span>
+        </button>
 
-  <!-- TOPLU FİYAT GÜNCELLEME ÖNİZLEME PENCERESİ -->
-  <div id="bulkModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-xl overflow-hidden">
-      <div class="p-4 border-b border-stone-200 flex items-center justify-between bg-stone-50">
-        <div>
-          <h2 class="font-bold text-base text-stone-900">Toplu Fiyat Güncelleme Önizlemesi</h2>
-          <p id="bulkSummary" class="text-xs text-stone-500 mt-0.5"></p>
-        </div>
-        <button onclick="closeBulkModal()" class="text-stone-400 hover:text-stone-700 text-lg font-bold px-2">✕</button>
+        <button onclick="toggleTheme()" aria-label="Tema Değiştir"
+          class="p-2 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-amber-400 hover:bg-stone-200 dark:hover:bg-stone-700 transition">
+          <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          <svg class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+          </svg>
+        </button>
       </div>
+    </header>
 
-      <!-- Ayar Çubuğu -->
-      <div class="px-4 py-2.5 bg-amber-50/70 border-b border-amber-100 flex flex-wrap items-center justify-between gap-2 text-xs">
-        <label class="flex items-center gap-2 font-medium text-stone-700 cursor-pointer">
-          <input type="checkbox" id="includeVatCheckbox" checked onchange="recalculateBulkPrices()" class="rounded text-amber-600" />
-          <span>Rapordaki fiyatlara KDV ekle (%10 / %20) ve tam TL'ye yuvarla</span>
-        </label>
-        <span class="text-stone-500">Mevcut fotoğraf ve açıklamalar korunur</span>
-      </div>
-
-      <!-- Liste Alanı -->
-      <div id="bulkPreviewBody" class="p-4 overflow-y-auto flex-1 space-y-5"></div>
-
-      <!-- Alt Butonlar -->
-      <div class="p-4 border-t border-stone-200 bg-stone-50 flex items-center justify-between gap-3">
-        <span id="bulkProgress" class="text-xs font-semibold text-blue-700"></span>
-        <div class="flex gap-2">
-          <button type="button" onclick="closeBulkModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-stone-600 hover:bg-stone-200">İptal</button>
-          <button type="button" id="applyBulkBtn" onclick="applyBulkUpdates()" class="px-5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 transition">
-            Seçili Güncellemeleri Uygula
-          </button>
-        </div>
-      </div>
-    </div>
+    <main id="productDetailContent" class="max-w-3xl mx-auto px-4 pt-5 pb-12"></main>
   </div>
 
   <script>
     // BURAYA MEVCUT SUPABASE ANON KEY BİLGİNİZİ YAPIŞTIRIN
     const SUPABASE_URL = 'https://pmhqpdrhlyncwsyehuvl.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtaHFwZHJobHluY3dzeWVodXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU2MTY3NTMsImV4cCI6MjExMTE5Mjc1M30.uJRs7wr232jW0sYVQUuXGkCeLcYFOqvBE5po7VyYpjs';
-    const BUCKET_NAME = 'menu-gorselleri';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    let products = [];
-    let parsedReportRows = [];
-    let bulkChanges = [];
-    let bulkNewItems = [];
+    let allProducts = [];
+    let selectedCategory = 'TÜMÜ';
+    let lastScrollY = 0;
+    let navigatedFromMenu = false;
 
-    async function checkSession() {
-      const { data: { session } } = await sb.auth.getSession();
-      if (session) {
-        document.getElementById('loginSection').classList.add('hidden');
-        document.getElementById('adminSection').classList.remove('hidden');
-        document.getElementById('userEmail').textContent = session.user.email;
-        loadProducts();
-      }
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('limcera-theme', isDark ? 'dark' : 'light');
     }
 
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const { error } = await sb.auth.signInWithPassword({ email, password });
+    function scrollFeatured(amount) {
+      document.getElementById('featuredTrack').scrollBy({ left: amount, behavior: 'smooth' });
+    }
+
+    async function fetchMenu() {
+      const { data, error } = await sb
+        .from('urunler')
+        .select('*')
+        .eq('aktif_mi', true)
+        .order('sira_no', { ascending: true })
+        .order('id', { ascending: true });
+
+      document.getElementById('loading').style.display = 'none';
+
       if (error) {
-        const errEl = document.getElementById('loginError');
-        errEl.textContent = 'Giriş başarısız: ' + error.message;
-        errEl.classList.remove('hidden');
-      } else {
-        checkSession();
+        document.getElementById('menuContainer').innerHTML =
+          `<p class="text-red-500 text-center text-sm">Menü yüklenirken hata oluştu.</p>`;
+        return;
       }
-    });
 
-    async function logout() {
-      await sb.auth.signOut();
-      location.reload();
+      allProducts = data || [];
+      renderFeatured();
+      renderCategories();
+      renderMenu();
+      handleInitialHash();
     }
 
-    async function loadProducts() {
-      const { data, error } = await sb.from('urunler').select('*').order('kategori').order('id');
-      if (!error) {
-        products = data || [];
-        const cats = [...new Set(products.map(p => p.kategori))];
-        const select = document.getElementById('adminCatFilter');
-        select.innerHTML = `<option value="TÜMÜ">Tüm Kategoriler (${products.length})</option>` + 
-          cats.map(c => `<option value="${c}">${c}</option>`).join('');
-        renderAdminList();
+    function renderFeatured() {
+      const query = document.getElementById('searchInput').value.toLowerCase().trim();
+      const featured = allProducts.filter(p => p.onerilen_mi === true);
+      const section = document.getElementById('featuredSection');
+      const track = document.getElementById('featuredTrack');
+
+      if (featured.length === 0 || query.length > 0) {
+        section.classList.add('hidden');
+        return;
       }
-    }
 
-    function renderAdminList() {
-      const q = document.getElementById('adminSearch').value.toLowerCase();
-      const cat = document.getElementById('adminCatFilter').value;
-      const filtered = products.filter(p => 
-        (cat === 'TÜMÜ' || p.kategori === cat) && 
-        (p.ad.toLowerCase().includes(q) || (p.urun_kodu && p.urun_kodu.toLowerCase().includes(q)))
-      );
-
-      document.getElementById('adminList').innerHTML = filtered.map(p => `
-        <div class="bg-white p-4 rounded-2xl border ${p.aktif_mi ? 'border-stone-200' : 'border-red-200 bg-red-50/30'} shadow-sm flex gap-4">
-          <div class="w-24 flex-shrink-0 flex flex-col items-center gap-2">
-            <div class="w-24 h-24 rounded-xl bg-stone-100 overflow-hidden border border-stone-200 flex items-center justify-center relative">
-              ${p.gorsel_url 
-                ? `<img id="img-${p.id}" src="${p.gorsel_url}" class="w-full h-full object-cover" />` 
-                : `<span id="img-${p.id}" class="text-[10px] text-stone-400">Görsel Yok</span>`
-              }
-            </div>
-            <label class="w-full text-center cursor-pointer bg-stone-900 text-white text-[11px] font-medium py-1.5 px-2 rounded-lg hover:bg-stone-700 transition">
-              Fotoğraf Seç
-              <input type="file" accept="image/*" class="hidden" onchange="uploadImage(event, ${p.id})" />
-            </label>
+      section.classList.remove('hidden');
+      track.innerHTML = featured.map(item => `
+        <div onclick="openProduct(${item.id})"
+          class="w-44 sm:w-48 flex-shrink-0 snap-start cursor-pointer group bg-white dark:bg-stone-900 rounded-2xl overflow-hidden border border-stone-200/80 dark:border-stone-800 shadow-sm hover:border-amber-400 dark:hover:border-amber-600 transition">
+          <div class="relative w-full h-28 bg-stone-100 dark:bg-stone-800 overflow-hidden flex items-center justify-center">
+            ${item.gorsel_url
+              ? `<img src="${item.gorsel_url}" alt="${item.ad}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" />`
+              : `<span class="text-xs font-bold text-stone-300 dark:text-stone-600">LİMCERA</span>`
+            }
+            <span class="absolute top-2 left-2 bg-amber-500 text-stone-950 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+              ★ Önerilen
+            </span>
           </div>
-
-          <div class="flex-1 space-y-2">
-            <div class="flex items-center justify-between gap-2">
-              <div class="flex items-center gap-1.5">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded">${p.kategori}</span>
-                ${p.urun_kodu ? `<span class="text-[10px] text-stone-400 font-mono">#${p.urun_kodu}</span>` : ''}
-              </div>
-              <label class="flex items-center gap-1.5 text-xs cursor-pointer">
-                <input type="checkbox" ${p.aktif_mi ? 'checked' : ''} onchange="toggleActive(${p.id}, this.checked)" class="rounded text-amber-600" />
-                <span>${p.aktif_mi ? 'Yayında' : 'Gizli'}</span>
-              </label>
-            </div>
-            
-            <input type="text" id="name-${p.id}" value="${p.ad}" class="w-full font-semibold text-sm border-b border-transparent focus:border-stone-300 outline-none py-0.5" />
-            <input type="text" id="desc-${p.id}" value="${p.aciklama || ''}" placeholder="Açıklama ekle..." class="w-full text-xs text-stone-500 border-b border-transparent focus:border-stone-300 outline-none py-0.5" />
-            
-            <div class="flex items-center justify-between pt-1">
-              <div class="flex items-center gap-1">
-                <input type="number" step="0.01" id="price-${p.id}" value="${p.fiyat}" class="w-24 px-2 py-1 border rounded-lg text-sm font-bold text-stone-900" />
-                <span class="text-xs font-semibold">₺</span>
-              </div>
-              <button onclick="saveProduct(${p.id})" id="btn-${p.id}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-emerald-700 transition">
-                Kaydet
-              </button>
+          <div class="p-2.5">
+            <div class="text-[10px] font-semibold text-stone-400 dark:text-stone-500 truncate">${item.kategori}</div>
+            <h3 class="font-bold text-xs text-stone-900 dark:text-stone-100 truncate mt-0.5">${item.ad}</h3>
+            <div class="mt-1.5 font-extrabold text-sm text-amber-700 dark:text-amber-400">
+              ${Number(item.fiyat).toLocaleString('tr-TR')} ₺
             </div>
           </div>
         </div>
       `).join('');
     }
 
-    // Görseli tarayıcıda sıkıştırıp WebP yapma fonksiyonu (Detay sayfası için 1000px)
-    function compressImageToWebP(file) {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onerror = () => resolve(file);
-        reader.onload = (event) => {
-          const img = new Image();
-          img.onerror = () => resolve(file);
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 1000;
-            const scaleSize = img.width > MAX_WIDTH ? MAX_WIDTH / img.width : 1;
-            canvas.width = img.width * scaleSize;
-            canvas.height = img.height * scaleSize;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            canvas.toBlob((blob) => resolve(blob || file), 'image/webp', 0.85);
-          };
-          img.src = event.target.result;
-        };
-        reader.readAsDataURL(file);
-      });
+    function renderCategories() {
+      const categories = ['TÜMÜ', ...new Set(allProducts.map(p => p.kategori))];
+      const tabsEl = document.getElementById('categoryTabs');
+      tabsEl.innerHTML = categories.map(cat => `
+        <button onclick="selectCategory('${cat}')"
+          class="whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-semibold transition ${
+            selectedCategory === cat
+              ? 'bg-stone-900 dark:bg-amber-500 text-white dark:text-stone-950 shadow-sm'
+              : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700'
+          }">
+          ${cat}
+        </button>
+      `).join('');
     }
 
-    async function uploadImage(event, productId) {
-      const file = event.target.files[0];
-      if (!file) return;
+    function selectCategory(cat) {
+      selectedCategory = cat;
+      renderCategories();
+      renderMenu();
+    }
 
-      const btn = document.getElementById(`btn-${productId}`);
-      btn.textContent = 'Yükleniyor...';
+    function renderMenu() {
+      renderFeatured();
+      const query = document.getElementById('searchInput').value.toLowerCase().trim();
+      const filtered = allProducts.filter(p => {
+        const matchesCat = selectedCategory === 'TÜMÜ' || p.kategori === selectedCategory;
+        const matchesQuery = p.ad.toLowerCase().includes(query) || (p.aciklama && p.aciklama.toLowerCase().includes(query));
+        return matchesCat && matchesQuery;
+      });
 
-      const webpBlob = await compressImageToWebP(file);
-      const isWebp = webpBlob.type === 'image/webp';
-      const fileName = `urun-${productId}-${Date.now()}.${isWebp ? 'webp' : 'jpg'}`;
-
-      const { error: uploadError } = await sb.storage
-        .from(BUCKET_NAME)
-        .upload(fileName, webpBlob, {
-          contentType: webpBlob.type || 'image/webp',
-          upsert: true
-        });
-
-      if (uploadError) {
-        alert('Fotoğraf yüklenemedi: ' + uploadError.message);
-        btn.textContent = 'Kaydet';
+      const container = document.getElementById('menuContainer');
+      if (filtered.length === 0) {
+        container.innerHTML = `<p class="text-center text-stone-500 dark:text-stone-400 py-10 text-sm">Aradığınız kriterde ürün bulunamadı.</p>`;
         return;
       }
 
-      const { data: { publicUrl } } = sb.storage.from(BUCKET_NAME).getPublicUrl(fileName);
-      await sb.from('urunler').update({ gorsel_url: publicUrl }).eq('id', productId);
-      btn.textContent = 'Kaydet';
-      loadProducts();
+      const grouped = filtered.reduce((acc, item) => {
+        acc[item.kategori] = acc[item.kategori] || [];
+        acc[item.kategori].push(item);
+        return acc;
+      }, {});
+
+      container.innerHTML = Object.entries(grouped).map(([category, items]) => `
+        <section>
+          <h2 class="text-base font-bold text-stone-900 dark:text-stone-100 mb-3 pb-1.5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
+            <span>${category}</span>
+            <span class="text-xs font-normal text-stone-400 dark:text-stone-500">${items.length} ürün</span>
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            ${items.map(item => `
+              <div onclick="openProduct(${item.id})"
+                class="group cursor-pointer bg-white dark:bg-stone-900 rounded-2xl p-3 border border-stone-100 dark:border-stone-800 shadow-sm hover:border-amber-300 dark:hover:border-amber-700 active:scale-[0.99] transition flex gap-3.5 items-center">
+                <div class="w-28 h-28 rounded-xl bg-stone-100 dark:bg-stone-800 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                  ${item.gorsel_url
+                    ? `<img src="${item.gorsel_url}" alt="${item.ad}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" />`
+                    : `<span class="text-xs font-bold text-stone-300 dark:text-stone-600 text-center px-2">LİMCERA</span>`
+                  }
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h3 class="font-semibold text-stone-900 dark:text-stone-100 text-sm leading-snug line-clamp-2">${item.ad}</h3>
+                  ${item.aciklama ? `<p class="text-xs text-stone-500 dark:text-stone-400 mt-1 line-clamp-2">${item.aciklama}</p>` : ''}
+                  <div class="mt-2.5 flex items-center justify-between">
+                    <span class="font-bold text-amber-700 dark:text-amber-400 text-base">${Number(item.fiyat).toLocaleString('tr-TR')} ₺</span>
+                    <span class="text-[11px] text-stone-400 dark:text-stone-500 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition">İncele →</span>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </section>
+      `).join('');
     }
 
-    async function saveProduct(id) {
-      const btn = document.getElementById(`btn-${id}`);
-      btn.textContent = '...';
-      const ad = document.getElementById(`name-${id}`).value;
-      const aciklama = document.getElementById(`desc-${id}`).value;
-      const fiyat = parseFloat(document.getElementById(`price-${id}`).value);
+    function openProduct(id, pushHistory = true) {
+      const item = allProducts.find(p => p.id === id);
+      if (!item) return;
 
-      const { error } = await sb.from('urunler').update({ ad, aciklama, fiyat }).eq('id', id);
-      if (error) alert('Hata: ' + error.message);
-      else {
-        btn.textContent = 'Kaydedildi ✓';
-        setTimeout(() => btn.textContent = 'Kaydet', 1500);
+      if (pushHistory) {
+        lastScrollY = window.scrollY;
+        navigatedFromMenu = true;
+        history.pushState({ productId: id }, '', `#urun-${id}`);
       }
+
+      document.title = `${item.ad} | Trabzon Limcera`;
+
+      const related = allProducts
+        .filter(p => p.kategori === item.kategori && p.id !== item.id)
+        .slice(0, 4);
+
+      document.getElementById('productDetailContent').innerHTML = `
+        <article class="bg-white dark:bg-stone-900 rounded-3xl overflow-hidden border border-stone-200/80 dark:border-stone-800 shadow-sm">
+          <div class="w-full aspect-[4/3] sm:aspect-[16/10] bg-stone-100 dark:bg-stone-800 flex items-center justify-center overflow-hidden">
+            ${item.gorsel_url
+              ? `<img src="${item.gorsel_url}" alt="${item.ad}" class="w-full h-full object-cover" />`
+              : `<div class="text-center p-6">
+                   <div class="text-2xl font-bold tracking-widest text-stone-300 dark:text-stone-600">TRABZON LİMCERA</div>
+                   <p class="text-xs text-stone-400 dark:text-stone-500 mt-1">Görsel hazırlanıyor</p>
+                 </div>`
+            }
+          </div>
+
+          <div class="p-6">
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <span class="text-xs font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 px-3 py-1 rounded-full">
+                ${item.kategori}
+              </span>
+              <span class="text-xs text-stone-400 dark:text-stone-500">Fiyatlara KDV Dahildir</span>
+            </div>
+
+            <h1 class="text-2xl font-bold text-stone-900 dark:text-white mt-2 leading-tight">${item.ad}</h1>
+
+            <div class="mt-3 text-2xl font-extrabold text-amber-700 dark:text-amber-400">
+              ${Number(item.fiyat).toLocaleString('tr-TR')} ₺
+            </div>
+
+            ${item.aciklama
+              ? `<div class="mt-4 pt-4 border-t border-stone-100 dark:border-stone-800">
+                   <h2 class="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-1.5">Ürün Açıklaması</h2>
+                   <p class="text-sm text-stone-600 dark:text-stone-300 leading-relaxed">${item.aciklama}</p>
+                 </div>`
+              : ''
+            }
+          </div>
+        </article>
+
+        ${related.length > 0 ? `
+          <section class="mt-8">
+            <h2 class="text-sm font-bold text-stone-900 dark:text-stone-100 mb-3">Aynı Kategorideki Diğer Lezzetler</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              ${related.map(rel => `
+                <div onclick="openProduct(${rel.id})"
+                  class="cursor-pointer bg-white dark:bg-stone-900 rounded-2xl p-2.5 border border-stone-100 dark:border-stone-800 hover:border-amber-400 transition">
+                  <div class="w-full aspect-square rounded-xl bg-stone-100 dark:bg-stone-800 overflow-hidden flex items-center justify-center mb-2">
+                    ${rel.gorsel_url
+                      ? `<img src="${rel.gorsel_url}" alt="${rel.ad}" loading="lazy" class="w-full h-full object-cover" />`
+                      : `<span class="text-[10px] font-bold text-stone-300 dark:text-stone-600">LİMCERA</span>`
+                    }
+                  </div>
+                  <div class="text-xs font-semibold text-stone-900 dark:text-stone-100 truncate">${rel.ad}</div>
+                  <div class="text-xs font-bold text-amber-700 dark:text-amber-400 mt-0.5">${Number(rel.fiyat).toLocaleString('tr-TR')} ₺</div>
+                </div>
+              `).join('')}
+            </div>
+          </section>
+        ` : ''}
+      `;
+
+      document.getElementById('menuView').classList.add('hidden');
+      document.getElementById('productDetailView').classList.remove('hidden');
+      window.scrollTo(0, 0);
     }
 
-    async function toggleActive(id, status) {
-      await sb.from('urunler').update({ aktif_mi: status }).eq('id', id);
-      loadProducts();
+    function showMenuView() {
+      document.title = 'Trabzon Limcera | Dijital Menü';
+      document.getElementById('productDetailView').classList.add('hidden');
+      document.getElementById('menuView').classList.remove('hidden');
+      window.scrollTo(0, lastScrollY);
     }
 
-    function openNewModal() { document.getElementById('newModal').classList.replace('hidden', 'flex'); }
-    function closeNewModal() { document.getElementById('newModal').classList.replace('flex', 'hidden'); }
-
-    document.getElementById('newProductForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const urun_kodu = document.getElementById('newCode').value.trim() || null;
-      const kategori = document.getElementById('newCat').value.toUpperCase().trim();
-      const ad = document.getElementById('newName').value.trim();
-      const aciklama = document.getElementById('newDesc').value.trim();
-      const fiyat = parseFloat(document.getElementById('newPrice').value);
-
-      const { error } = await sb.from('urunler').insert([{ urun_kodu, kategori, ad, aciklama, fiyat, aktif_mi: true }]);
-      if (!error) {
-        closeNewModal();
-        e.target.reset();
-        loadProducts();
+    function closeProduct() {
+      if (navigatedFromMenu) {
+        navigatedFromMenu = false;
+        history.back();
       } else {
-        alert('Hata: ' + error.message);
+        history.replaceState(null, '', window.location.pathname);
+        showMenuView();
       }
-    });
-
-    // --- HTML RAPOR OKUMA VE TOPLU FİYAT GÜNCELLEME ---
-    function cleanCellText(cell) {
-      return cell ? cell.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '';
     }
 
-    function handleReportUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(e.target.result, 'text/html');
-        const rows = Array.from(doc.querySelectorAll('tr'));
-
-        let colCode = 1, colName = 2, colCat = 4, colPrice = 23, colVat = 27;
-        let headerFound = false;
-
-        for (const row of rows) {
-          const cells = Array.from(row.querySelectorAll('td, th')).map(cleanCellText);
-          const idxName = cells.findIndex(c => c.toLowerCase().includes('ürün adı'));
-          const idxPrice = cells.findIndex(c => c.toLowerCase().includes('satış fiyatı1'));
-          if (idxName !== -1 && idxPrice !== -1) {
-            const idxCode = cells.findIndex(c => c.toLowerCase().includes('ürün kodu'));
-            const idxCat = cells.findIndex(c => c.toLowerCase() === 'ana grup' || c.toLowerCase() === 'grup');
-            const idxVat = cells.findIndex(c => c.toLowerCase().includes('satış kdv'));
-            if (idxCode !== -1) colCode = idxCode;
-            colName = idxName;
-            if (idxCat !== -1) colCat = idxCat;
-            colPrice = idxPrice;
-            if (idxVat !== -1) colVat = idxVat;
-            headerFound = true;
-            break;
-          }
-        }
-
-        if (!headerFound) {
-          alert('Yüklenen HTML dosyasında Webticari ürün listesi tablosu bulunamadı.');
-          event.target.value = '';
+    function handleInitialHash() {
+      const hash = window.location.hash;
+      if (hash && hash.startsWith('#urun-')) {
+        const id = parseInt(hash.replace('#urun-', ''), 10);
+        if (!isNaN(id)) {
+          openProduct(id, false);
           return;
         }
-
-        parsedReportRows = [];
-        for (const row of rows) {
-          const cells = Array.from(row.querySelectorAll('td'));
-          if (cells.length <= colPrice) continue;
-
-          const code = cleanCellText(cells[colCode]);
-          const name = cleanCellText(cells[colName]);
-          const cat = cleanCellText(cells[colCat]) || 'DİĞER';
-          const rawPriceStr = cleanCellText(cells[colPrice]).replace(/,/g, '');
-          const vatStr = cleanCellText(cells[colVat]).replace('%', '').replace(/,/g, '');
-
-          if (!name || name === 'Ürün Adı' || code.startsWith('ÖZEL')) continue;
-          const rawPrice = parseFloat(rawPriceStr);
-          if (isNaN(rawPrice) || rawPrice <= 0) continue;
-
-          const vat = isNaN(parseFloat(vatStr)) ? 10 : parseFloat(vatStr);
-          parsedReportRows.push({ code, name, cat, rawPrice, vat });
-        }
-
-        event.target.value = '';
-        recalculateBulkPrices();
-        document.getElementById('bulkModal').classList.replace('hidden', 'flex');
-      };
-      reader.readAsText(file, 'UTF-8');
+      }
+      showMenuView();
     }
 
-    function recalculateBulkPrices() {
-      const addVat = document.getElementById('includeVatCheckbox').checked;
-      bulkChanges = [];
-      bulkNewItems = [];
-      let unchangedCount = 0;
-
-      const byCode = new Map();
-      const byName = new Map();
-      products.forEach(p => {
-        if (p.urun_kodu) byCode.set(p.urun_kodu.trim().toUpperCase(), p);
-        byName.set(p.ad.trim().toLocaleUpperCase('tr-TR'), p);
-      });
-
-      const seenDbIds = new Set();
-
-      for (const item of parsedReportRows) {
-        const finalPrice = addVat 
-          ? Math.round(item.rawPrice * (1 + item.vat / 100)) 
-          : Number(item.rawPrice.toFixed(2));
-
-        const matched = (item.code && byCode.get(item.code.toUpperCase())) || 
-                        byName.get(item.name.toLocaleUpperCase('tr-TR'));
-
-        if (matched) {
-          if (seenDbIds.has(matched.id)) continue;
-          seenDbIds.add(matched.id);
-
-          if (Number(matched.fiyat) !== finalPrice) {
-            bulkChanges.push({
-              id: matched.id,
-              code: matched.urun_kodu || item.code,
-              name: matched.ad,
-              oldPrice: Number(matched.fiyat),
-              newPrice: finalPrice,
-              selected: true
-            });
-          } else {
-            unchangedCount++;
-          }
-        } else {
-          bulkNewItems.push({
-            code: item.code,
-            cat: item.cat.toLocaleUpperCase('tr-TR'),
-            name: item.name,
-            newPrice: finalPrice,
-            selected: false
-          });
-        }
-      }
-
-      document.getElementById('bulkSummary').textContent = 
-        `${parsedReportRows.length} ürün okundu • ${bulkChanges.length} fiyat değişikliği • ${unchangedCount} ürün aynı • ${bulkNewItems.length} yeni kayıt`;
-
-      renderBulkPreview();
-    }
-
-    function renderBulkPreview() {
-      const container = document.getElementById('bulkPreviewBody');
-      let html = '';
-
-      if (bulkChanges.length === 0) {
-        html += `<div class="text-center py-6 bg-stone-50 rounded-xl text-sm text-stone-500">Mevcut ürünlerin tamamının fiyatı rapordaki tutarlarla aynı.</div>`;
-      } else {
-        html += `
-          <div>
-            <h3 class="text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">Fiyatı Güncellenecek Ürünler (${bulkChanges.length})</h3>
-            <div class="border border-stone-200 rounded-xl overflow-hidden">
-              <table class="w-full text-left text-xs">
-                <thead class="bg-stone-100 text-stone-600 font-semibold">
-                  <tr>
-                    <th class="p-2.5 w-8"><input type="checkbox" checked onchange="toggleAllBulkChanges(this.checked)" /></th>
-                    <th class="p-2.5">Ürün</th>
-                    <th class="p-2.5 text-right">Eski Fiyat</th>
-                    <th class="p-2.5 text-right">Yeni Fiyat (₺)</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-stone-100">
-                  ${bulkChanges.map((c, idx) => `
-                    <tr class="hover:bg-stone-50">
-                      <td class="p-2.5"><input type="checkbox" ${c.selected ? 'checked' : ''} onchange="bulkChanges[${idx}].selected = this.checked" /></td>
-                      <td class="p-2.5">
-                        <div class="font-semibold text-stone-900">${c.name}</div>
-                        <div class="text-[10px] text-stone-400">${c.code || ''}</div>
-                      </td>
-                      <td class="p-2.5 text-right text-stone-400 line-through">${c.oldPrice} ₺</td>
-                      <td class="p-2.5 text-right">
-                        <input type="number" step="0.01" value="${c.newPrice}" onchange="bulkChanges[${idx}].newPrice = parseFloat(this.value)"
-                          class="w-20 px-2 py-1 border rounded-lg text-right font-bold text-emerald-700" />
-                      </td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        `;
-      }
-
-      if (bulkNewItems.length > 0) {
-        html += `
-          <div>
-            <h3 class="text-xs font-bold uppercase tracking-wider text-amber-700 mb-2">Menüde Olmayan Yeni Ürünler (${bulkNewItems.length}) — İsterseniz Seçip Ekleyin</h3>
-            <div class="border border-amber-200 rounded-xl overflow-hidden">
-              <table class="w-full text-left text-xs">
-                <thead class="bg-amber-50 text-amber-900 font-semibold">
-                  <tr>
-                    <th class="p-2.5 w-8">Ekle</th>
-                    <th class="p-2.5">Kategori / Ürün</th>
-                    <th class="p-2.5 text-right">Fiyat</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-amber-100">
-                  ${bulkNewItems.map((n, idx) => `
-                    <tr>
-                      <td class="p-2.5"><input type="checkbox" ${n.selected ? 'checked' : ''} onchange="bulkNewItems[${idx}].selected = this.checked" /></td>
-                      <td class="p-2.5">
-                        <span class="text-[10px] font-bold text-amber-700 mr-1">[${n.cat}]</span>
-                        <span class="font-medium text-stone-800">${n.name}</span>
-                      </td>
-                      <td class="p-2.5 text-right font-bold">${n.newPrice} ₺</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        `;
-      }
-
-      container.innerHTML = html;
-    }
-
-    function toggleAllBulkChanges(checked) {
-      bulkChanges.forEach(c => c.selected = checked);
-      renderBulkPreview();
-    }
-
-    function closeBulkModal() {
-      document.getElementById('bulkModal').classList.replace('flex', 'hidden');
-      document.getElementById('bulkProgress').textContent = '';
-    }
-
-    async function applyBulkUpdates() {
-      const toUpdate = bulkChanges.filter(c => c.selected && !isNaN(c.newPrice));
-      const toInsert = bulkNewItems.filter(n => n.selected && !isNaN(n.newPrice));
-
-      if (toUpdate.length === 0 && toInsert.length === 0) {
-        alert('Güncellenecek veya eklenecek seçili ürün bulunmuyor.');
-        return;
-      }
-
-      const btn = document.getElementById('applyBulkBtn');
-      const progress = document.getElementById('bulkProgress');
-      btn.disabled = true;
-
-      for (let i = 0; i < toUpdate.length; i += 20) {
-        const chunk = toUpdate.slice(i, i + 20);
-        progress.textContent = `Fiyatlar güncelleniyor (${Math.min(i + 20, toUpdate.length)}/${toUpdate.length})...`;
-        await Promise.all(
-          chunk.map(item => sb.from('urunler').update({ fiyat: item.newPrice }).eq('id', item.id))
-        );
-      }
-
-      if (toInsert.length > 0) {
-        progress.textContent = 'Yeni ürünler ekleniyor...';
-        await sb.from('urunler').insert(
-          toInsert.map(n => ({
-            urun_kodu: n.code || null,
-            kategori: n.cat,
-            ad: n.name,
-            fiyat: n.newPrice,
-            aktif_mi: true
-          }))
-        );
-      }
-
-      btn.disabled = false;
-      closeBulkModal();
-      await loadProducts();
-      alert(`İşlem tamamlandı! ${toUpdate.length} ürünün fiyatı güncellendi${toInsert.length ? `, ${toInsert.length} yeni ürün eklendi` : ''}.`);
-    }
-
-    checkSession();
+    window.addEventListener('popstate', handleInitialHash);
+    document.getElementById('searchInput').addEventListener('input', renderMenu);
+    fetchMenu();
   </script>
 </body>
 </html>
