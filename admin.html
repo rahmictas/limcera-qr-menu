@@ -38,6 +38,9 @@
           <p class="text-xs text-stone-500" id="userEmail"></p>
         </div>
         <div class="flex flex-wrap gap-2">
+          <button onclick="openOrderModal()" class="bg-stone-900 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-stone-700 transition">
+            ↕️ Sıralama
+          </button>
           <button onclick="openSettingsModal()" class="bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-sky-700 transition">
             📶 Wi-Fi & Yorum
           </button>
@@ -72,6 +75,54 @@
       <!-- Ürün Kartları -->
       <div id="adminList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
     </main>
+  </div>
+
+  <!-- ÜRÜN VE KATEGORİ SIRALAMA PENCERESİ -->
+  <div id="orderModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-xl overflow-hidden">
+      <div class="p-4 border-b border-stone-200 flex items-center justify-between bg-stone-50">
+        <div>
+          <h2 class="font-bold text-base text-stone-900">Menü Sıralamasını Düzenle</h2>
+          <p class="text-xs text-stone-500 mt-0.5">Ürünlerin ve kategorilerin müşteri menüsündeki görünüm sırasını belirleyin</p>
+        </div>
+        <button onclick="closeOrderModal()" class="text-stone-400 hover:text-stone-700 text-lg font-bold px-2">✕</button>
+      </div>
+
+      <!-- Sekmeler -->
+      <div class="px-4 pt-3 bg-white border-b border-stone-200 flex flex-wrap items-center justify-between gap-2 pb-3">
+        <div class="flex gap-2">
+          <button type="button" id="orderTabProducts" onclick="switchOrderTab('products')"
+            class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-stone-900 text-white transition">
+            Ürün Sırası
+          </button>
+          <button type="button" id="orderTabCategories" onclick="switchOrderTab('categories')"
+            class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition">
+            Kategori Sırası
+          </button>
+        </div>
+
+        <div id="orderCategorySelectorWrap" class="flex items-center gap-2">
+          <span class="text-xs font-semibold text-stone-500">Kategori:</span>
+          <select id="orderCategorySelect" onchange="onOrderCategoryChange()"
+            class="bg-stone-50 border border-stone-300 rounded-xl px-3 py-1.5 text-xs font-bold text-stone-900 outline-none focus:border-amber-500">
+          </select>
+        </div>
+      </div>
+
+      <!-- Liste Alanı -->
+      <div id="orderModalBody" class="p-4 overflow-y-auto flex-1 space-y-2"></div>
+
+      <!-- Alt Kaydet Çubuğu -->
+      <div class="p-4 border-t border-stone-200 bg-stone-50 flex items-center justify-between gap-3">
+        <span id="orderSaveStatus" class="text-xs font-semibold text-stone-500">Sıra numarası yazabilir veya okları kullanabilirsiniz.</span>
+        <div class="flex gap-2">
+          <button type="button" onclick="closeOrderModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-stone-600 hover:bg-stone-200">İptal</button>
+          <button type="button" id="saveOrderBtn" onclick="saveOrderChanges()" class="px-5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 transition">
+            Sıralamayı Kaydet
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- WI-FI VE GOOGLE YORUM AYARLARI PENCERESİ -->
@@ -178,6 +229,21 @@
     let bulkChanges = [];
     let bulkNewItems = [];
 
+    // Sıralama durumu
+    let currentOrderTab = 'products';
+    let orderDraftCategories = [];
+    let orderDraftByCategory = {};
+    let isSavingOrder = false;
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
     async function checkSession() {
       const { data: { session } } = await sb.auth.getSession();
       if (session) {
@@ -205,6 +271,264 @@
     async function logout() {
       await sb.auth.signOut();
       location.reload();
+    }
+
+    // --- ÜRÜN VE KATEGORİ SIRALAMA SİSTEMİ ---
+    function openOrderModal() {
+      if (products.length === 0) return;
+
+      orderDraftCategories = [...new Set(products.map(p => p.kategori))];
+      orderDraftByCategory = {};
+      for (const cat of orderDraftCategories) {
+        orderDraftByCategory[cat] = products.filter(p => p.kategori === cat);
+      }
+
+      const catSelect = document.getElementById('orderCategorySelect');
+      catSelect.innerHTML = orderDraftCategories
+        .map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)} (${orderDraftByCategory[c].length})</option>`)
+        .join('');
+
+      const activeFilter = document.getElementById('adminCatFilter').value;
+      if (orderDraftCategories.includes(activeFilter)) {
+        catSelect.value = activeFilter;
+      }
+
+      document.getElementById('orderSaveStatus').textContent = 'Sıra numarası yazabilir veya okları kullanabilirsiniz.';
+      switchOrderTab('products');
+      document.getElementById('orderModal').classList.replace('hidden', 'flex');
+    }
+
+    function closeOrderModal() {
+      if (isSavingOrder) return;
+      document.getElementById('orderModal').classList.replace('flex', 'hidden');
+    }
+
+    function switchOrderTab(tab) {
+      currentOrderTab = tab;
+      const prodBtn = document.getElementById('orderTabProducts');
+      const catBtn = document.getElementById('orderTabCategories');
+      const catWrap = document.getElementById('orderCategorySelectorWrap');
+
+      if (tab === 'products') {
+        prodBtn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-stone-900 text-white transition';
+        catBtn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition';
+        catWrap.classList.remove('hidden');
+      } else {
+        catBtn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-stone-900 text-white transition';
+        prodBtn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition';
+        catWrap.classList.add('hidden');
+      }
+
+      renderOrderModalContent();
+    }
+
+    function onOrderCategoryChange() {
+      renderOrderModalContent();
+    }
+
+    function renderOrderModalContent() {
+      const body = document.getElementById('orderModalBody');
+
+      if (currentOrderTab === 'products') {
+        const selectedCat = document.getElementById('orderCategorySelect').value;
+        const list = orderDraftByCategory[selectedCat] || [];
+
+        if (list.length === 0) {
+          body.innerHTML = `<div class="text-center py-8 text-sm text-stone-400">Bu kategoride ürün bulunmuyor.</div>`;
+          return;
+        }
+
+        body.innerHTML = list.map((item, idx) => `
+          <div class="flex items-center gap-2.5 p-2.5 bg-white border border-stone-200 rounded-xl hover:border-amber-300 transition">
+            <input type="number" min="1" max="${list.length}" value="${idx + 1}"
+              onchange="moveOrderProduct(${idx}, parseInt(this.value, 10) - 1)"
+              title="Sıra Numarası"
+              class="w-12 text-center py-1 px-1 bg-stone-100 border border-stone-200 rounded-lg text-xs font-extrabold text-stone-900 outline-none focus:border-amber-500 focus:bg-white" />
+
+            <div class="w-10 h-10 rounded-lg bg-stone-100 overflow-hidden flex-shrink-0 border border-stone-200 flex items-center justify-center">
+              ${item.gorsel_url
+                ? `<img src="${item.gorsel_url}" alt="" class="w-full h-full object-cover" />`
+                : `<span class="text-[9px] font-bold text-stone-400">YOK</span>`
+              }
+            </div>
+
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-bold text-stone-900 truncate">${escapeHtml(item.ad)}</div>
+              <div class="text-[11px] text-stone-500">${Number(item.fiyat).toLocaleString('tr-TR')} ₺ ${item.onerilen_mi ? '• ★ Önerilen' : ''}</div>
+            </div>
+
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <button type="button" onclick="moveOrderProduct(${idx}, 0)" ${idx === 0 ? 'disabled' : ''}
+                title="En Üste Taşı"
+                class="px-2 py-1.5 rounded-lg bg-amber-50 text-amber-800 hover:bg-amber-100 text-xs font-bold disabled:opacity-25 disabled:pointer-events-none transition">
+                ⤒
+              </button>
+              <button type="button" onclick="moveOrderProduct(${idx}, ${idx - 1})" ${idx === 0 ? 'disabled' : ''}
+                title="Yukarı Taşı"
+                class="px-2.5 py-1.5 rounded-lg bg-stone-100 text-stone-800 hover:bg-stone-200 text-xs font-bold disabled:opacity-25 disabled:pointer-events-none transition">
+                ↑
+              </button>
+              <button type="button" onclick="moveOrderProduct(${idx}, ${idx + 1})" ${idx === list.length - 1 ? 'disabled' : ''}
+                title="Aşağı Taşı"
+                class="px-2.5 py-1.5 rounded-lg bg-stone-100 text-stone-800 hover:bg-stone-200 text-xs font-bold disabled:opacity-25 disabled:pointer-events-none transition">
+                ↓
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        body.innerHTML = orderDraftCategories.map((cat, idx) => {
+          const count = (orderDraftByCategory[cat] || []).length;
+          return `
+            <div class="flex items-center gap-3 p-3 bg-white border border-stone-200 rounded-xl hover:border-amber-300 transition">
+              <input type="number" min="1" max="${orderDraftCategories.length}" value="${idx + 1}"
+                onchange="moveOrderCategory(${idx}, parseInt(this.value, 10) - 1)"
+                title="Kategori Sırası"
+                class="w-12 text-center py-1 px-1 bg-stone-100 border border-stone-200 rounded-lg text-xs font-extrabold text-stone-900 outline-none focus:border-amber-500 focus:bg-white" />
+
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-bold text-stone-900 truncate">${escapeHtml(cat)}</div>
+                <div class="text-xs text-stone-500">${count} ürün</div>
+              </div>
+
+              <div class="flex items-center gap-1 flex-shrink-0">
+                <button type="button" onclick="moveOrderCategory(${idx}, 0)" ${idx === 0 ? 'disabled' : ''}
+                  title="En Üste Taşı"
+                  class="px-2 py-1.5 rounded-lg bg-amber-50 text-amber-800 hover:bg-amber-100 text-xs font-bold disabled:opacity-25 disabled:pointer-events-none transition">
+                  ⤒
+                </button>
+                <button type="button" onclick="moveOrderCategory(${idx}, ${idx - 1})" ${idx === 0 ? 'disabled' : ''}
+                  title="Yukarı Taşı"
+                  class="px-2.5 py-1.5 rounded-lg bg-stone-100 text-stone-800 hover:bg-stone-200 text-xs font-bold disabled:opacity-25 disabled:pointer-events-none transition">
+                  ↑
+                </button>
+                <button type="button" onclick="moveOrderCategory(${idx}, ${idx + 1})" ${idx === orderDraftCategories.length - 1 ? 'disabled' : ''}
+                  title="Aşağı Taşı"
+                  class="px-2.5 py-1.5 rounded-lg bg-stone-100 text-stone-800 hover:bg-stone-200 text-xs font-bold disabled:opacity-25 disabled:pointer-events-none transition">
+                  ↓
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function moveOrderProduct(fromIdx, toIdx) {
+      const selectedCat = document.getElementById('orderCategorySelect').value;
+      const list = orderDraftByCategory[selectedCat];
+      if (!list || isNaN(toIdx)) {
+        renderOrderModalContent();
+        return;
+      }
+      const clampedTo = Math.max(0, Math.min(list.length - 1, toIdx));
+      if (fromIdx === clampedTo) {
+        renderOrderModalContent();
+        return;
+      }
+      const [moved] = list.splice(fromIdx, 1);
+      list.splice(clampedTo, 0, moved);
+      renderOrderModalContent();
+    }
+
+    function moveOrderCategory(fromIdx, toIdx) {
+      if (isNaN(toIdx)) {
+        renderOrderModalContent();
+        return;
+      }
+      const clampedTo = Math.max(0, Math.min(orderDraftCategories.length - 1, toIdx));
+      if (fromIdx === clampedTo) {
+        renderOrderModalContent();
+        return;
+      }
+      const [moved] = orderDraftCategories.splice(fromIdx, 1);
+      orderDraftCategories.splice(clampedTo, 0, moved);
+      renderOrderModalContent();
+    }
+
+    async function saveOrderChanges() {
+      if (isSavingOrder) return;
+      isSavingOrder = true;
+
+      const btn = document.getElementById('saveOrderBtn');
+      const statusEl = document.getElementById('orderSaveStatus');
+      btn.disabled = true;
+      btn.textContent = 'Kaydediliyor...';
+
+      const updates = [];
+      let seq = 1;
+      for (const cat of orderDraftCategories) {
+        const list = orderDraftByCategory[cat] || [];
+        for (const item of list) {
+          if (item.sira_no !== seq) {
+            updates.push({ id: item.id, sira_no: seq });
+          }
+          seq++;
+        }
+      }
+
+      try {
+        for (let i = 0; i < updates.length; i += 25) {
+          const chunk = updates.slice(i, i + 25);
+          statusEl.textContent = `Sıralama kaydediliyor (${Math.min(i + 25, updates.length)}/${updates.length})...`;
+          const results = await Promise.all(
+            chunk.map(u => sb.from('urunler').update({ sira_no: u.sira_no }).eq('id', u.id))
+          );
+          const failed = results.find(r => r.error);
+          if (failed) throw failed.error;
+        }
+
+        isSavingOrder = false;
+        btn.disabled = false;
+        btn.textContent = 'Sıralamayı Kaydet';
+        closeOrderModal();
+        await loadProducts();
+        alert('Menü sıralaması başarıyla güncellendi!');
+      } catch (err) {
+        isSavingOrder = false;
+        btn.disabled = false;
+        btn.textContent = 'Sıralamayı Kaydet';
+        statusEl.textContent = 'Hata oluştu: ' + err.message;
+        alert('Sıralama kaydedilirken hata oluştu: ' + err.message);
+      }
+    }
+
+    // Kart üzerinden tek tıkla hızlı yer değiştirme (Kategori filtresi seçiliyken)
+    async function quickSwapProduct(productId, direction) {
+      const cat = document.getElementById('adminCatFilter').value;
+      if (cat === 'TÜMÜ' || cat === 'ONERILENLER') return;
+
+      const catList = products.filter(p => p.kategori === cat);
+      const idx = catList.findIndex(p => p.id === productId);
+      const targetIdx = idx + direction;
+      if (idx === -1 || targetIdx < 0 || targetIdx >= catList.length) return;
+
+      const [moved] = catList.splice(idx, 1);
+      catList.splice(targetIdx, 0, moved);
+
+      // Tüm kategoriler için tutarlı sıra numaralarını hesapla
+      const allCats = [...new Set(products.map(p => p.kategori))];
+      const rebuilt = [];
+      for (const c of allCats) {
+        if (c === cat) rebuilt.push(...catList);
+        else rebuilt.push(...products.filter(p => p.kategori === c));
+      }
+
+      const changed = [];
+      rebuilt.forEach((item, index) => {
+        const nextNo = index + 1;
+        if (item.sira_no !== nextNo) {
+          item.sira_no = nextNo;
+          changed.push({ id: item.id, sira_no: nextNo });
+        }
+      });
+
+      products = rebuilt;
+      renderAdminList();
+
+      await Promise.all(
+        changed.map(u => sb.from('urunler').update({ sira_no: u.sira_no }).eq('id', u.id))
+      );
     }
 
     // --- WI-FI & GOOGLE YORUM AYARLARI ---
@@ -261,7 +585,13 @@
     }
 
     async function loadProducts() {
-      const { data, error } = await sb.from('urunler').select('*').order('kategori').order('id');
+      const currentFilter = document.getElementById('adminCatFilter').value;
+      const { data, error } = await sb
+        .from('urunler')
+        .select('*')
+        .order('sira_no', { ascending: true })
+        .order('id', { ascending: true });
+
       if (!error) {
         products = data || [];
         const cats = [...new Set(products.map(p => p.kategori))];
@@ -270,8 +600,11 @@
         select.innerHTML = `
           <option value="TÜMÜ">Tüm Kategoriler (${products.length})</option>
           <option value="ONERILENLER">★ Önerilen Ürünler (${featuredCount})</option>
-          ${cats.map(c => `<option value="${c}">${c}</option>`).join('')}
+          ${cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
         `;
+        if ([...select.options].some(o => o.value === currentFilter)) {
+          select.value = currentFilter;
+        }
         renderAdminList();
       }
     }
@@ -279,6 +612,8 @@
     function renderAdminList() {
       const q = normalizeTR(document.getElementById('adminSearch').value).trim();
       const cat = document.getElementById('adminCatFilter').value;
+      const showQuickArrows = cat !== 'TÜMÜ' && cat !== 'ONERILENLER' && q === '';
+
       const filtered = products.filter(p => {
         const matchesCat =
           cat === 'TÜMÜ' ? true :
@@ -290,7 +625,7 @@
         return matchesCat && matchesQuery;
       });
 
-      document.getElementById('adminList').innerHTML = filtered.map(p => `
+      document.getElementById('adminList').innerHTML = filtered.map((p, idx) => `
         <div class="bg-white p-4 rounded-2xl border ${p.aktif_mi ? 'border-stone-200' : 'border-red-200 bg-red-50/30'} shadow-sm flex gap-4">
           <div class="w-24 flex-shrink-0 flex flex-col items-center gap-2">
             <div class="w-24 h-24 rounded-xl bg-stone-100 overflow-hidden border border-stone-200 flex items-center justify-center relative">
@@ -308,7 +643,16 @@
           <div class="flex-1 space-y-2 min-w-0">
             <div class="flex flex-wrap items-center justify-between gap-1.5">
               <div class="flex items-center gap-1.5 min-w-0">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded truncate">${p.kategori}</span>
+                ${showQuickArrows ? `
+                  <div class="flex items-center gap-0.5 bg-stone-100 rounded-lg p-0.5 border border-stone-200">
+                    <span class="text-[10px] font-extrabold text-stone-600 px-1">#${idx + 1}</span>
+                    <button type="button" onclick="quickSwapProduct(${p.id}, -1)" ${idx === 0 ? 'disabled' : ''}
+                      class="px-1.5 py-0.5 rounded bg-white text-stone-800 hover:bg-amber-100 text-[11px] font-bold disabled:opacity-30">↑</button>
+                    <button type="button" onclick="quickSwapProduct(${p.id}, 1)" ${idx === filtered.length - 1 ? 'disabled' : ''}
+                      class="px-1.5 py-0.5 rounded bg-white text-stone-800 hover:bg-amber-100 text-[11px] font-bold disabled:opacity-30">↓</button>
+                  </div>
+                ` : ''}
+                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded truncate">${escapeHtml(p.kategori)}</span>
               </div>
               <div class="flex items-center gap-2.5 text-xs">
                 <label class="flex items-center gap-1 cursor-pointer font-medium text-amber-700">
@@ -322,8 +666,8 @@
               </div>
             </div>
             
-            <input type="text" id="name-${p.id}" value="${p.ad}" class="w-full font-semibold text-sm border-b border-transparent focus:border-stone-300 outline-none py-0.5" />
-            <input type="text" id="desc-${p.id}" value="${p.aciklama || ''}" placeholder="Açıklama ekle..." class="w-full text-xs text-stone-500 border-b border-transparent focus:border-stone-300 outline-none py-0.5" />
+            <input type="text" id="name-${p.id}" value="${escapeHtml(p.ad)}" class="w-full font-semibold text-sm border-b border-transparent focus:border-stone-300 outline-none py-0.5" />
+            <input type="text" id="desc-${p.id}" value="${escapeHtml(p.aciklama || '')}" placeholder="Açıklama ekle..." class="w-full text-xs text-stone-500 border-b border-transparent focus:border-stone-300 outline-none py-0.5" />
             
             <div class="flex items-center justify-between pt-1">
               <div class="flex items-center gap-1">
@@ -506,8 +850,18 @@
       const ad = document.getElementById('newName').value.trim();
       const aciklama = document.getElementById('newDesc').value.trim();
       const fiyat = parseFloat(document.getElementById('newPrice').value);
+      const nextSira = products.reduce((max, p) => Math.max(max, Number(p.sira_no) || 0), 0) + 1;
 
-      const { error } = await sb.from('urunler').insert([{ urun_kodu, kategori, ad, aciklama, fiyat, aktif_mi: true, onerilen_mi: false }]);
+      const { error } = await sb.from('urunler').insert([{
+        urun_kodu,
+        kategori,
+        ad,
+        aciklama,
+        fiyat,
+        sira_no: nextSira,
+        aktif_mi: true,
+        onerilen_mi: false
+      }]);
       if (!error) {
         closeNewModal();
         e.target.reset();
@@ -686,8 +1040,8 @@
                     <tr class="hover:bg-stone-50">
                       <td class="p-2.5"><input type="checkbox" ${c.selected ? 'checked' : ''} onchange="bulkChanges[${idx}].selected = this.checked" /></td>
                       <td class="p-2.5">
-                        <div class="font-semibold text-stone-900">${c.name}</div>
-                        <div class="text-[10px] text-stone-400">${c.code || ''}</div>
+                        <div class="font-semibold text-stone-900">${escapeHtml(c.name)}</div>
+                        <div class="text-[10px] text-stone-400">${escapeHtml(c.code || '')}</div>
                       </td>
                       <td class="p-2.5 text-right text-stone-400 line-through">${c.oldPrice} ₺</td>
                       <td class="p-2.5 text-right">
@@ -721,8 +1075,8 @@
                     <tr>
                       <td class="p-2.5"><input type="checkbox" ${n.selected ? 'checked' : ''} onchange="bulkNewItems[${idx}].selected = this.checked" /></td>
                       <td class="p-2.5">
-                        <span class="text-[10px] font-bold text-amber-700 mr-1">[${n.cat}]</span>
-                        <span class="font-medium text-stone-800">${n.name}</span>
+                        <span class="text-[10px] font-bold text-amber-700 mr-1">[${escapeHtml(n.cat)}]</span>
+                        <span class="font-medium text-stone-800">${escapeHtml(n.name)}</span>
                       </td>
                       <td class="p-2.5 text-right font-bold">${n.newPrice} ₺</td>
                     </tr>
@@ -770,12 +1124,14 @@
 
       if (toInsert.length > 0) {
         progress.textContent = 'Yeni ürünler ekleniyor...';
+        let maxSira = products.reduce((max, p) => Math.max(max, Number(p.sira_no) || 0), 0);
         await sb.from('urunler').insert(
           toInsert.map(n => ({
             urun_kodu: n.code || null,
             kategori: n.cat,
             ad: n.name,
             fiyat: n.newPrice,
+            sira_no: ++maxSira,
             aktif_mi: true,
             onerilen_mi: false
           }))
