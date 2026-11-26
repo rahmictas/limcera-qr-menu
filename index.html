@@ -32,13 +32,13 @@
         <div class="flex items-center justify-between mb-3 gap-2">
           <!-- Sol Üst Logo ve İşletme Adı -->
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-11 h-11 rounded-xl bg-stone-900 dark:bg-amber-500 text-white dark:text-stone-950 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm border border-stone-200 dark:border-stone-700">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden border border-stone-200/80 dark:border-stone-700/80 shadow-sm">
               <img id="siteLogoImg"
-                src="https://pmhqpdrhlyncwsyehuvl.supabase.co/storage/v1/object/public/menu-gorselleri/site-logo.webp"
+                src="https://pmhqpdrhlyncwsyehuvl.supabase.co/storage/v1/object/public/menu-gorselleri/site-logo.png"
                 alt="Trabzon Limcera Logo"
-                onerror="this.style.display='none'; document.getElementById('siteLogoFallback').classList.remove('hidden');"
-                class="w-full h-full object-contain bg-white dark:bg-stone-900 p-0.5" />
-              <span id="siteLogoFallback" class="hidden font-extrabold text-base tracking-tighter">TL</span>
+                onerror="this.style.display='none'; const fb=document.getElementById('siteLogoFallback'); fb.classList.remove('hidden'); fb.classList.add('flex');"
+                class="w-full h-full object-contain" />
+              <span id="siteLogoFallback" class="hidden w-full h-full items-center justify-center bg-stone-900 dark:bg-amber-500 text-white dark:text-stone-950 font-extrabold text-base tracking-tighter">TL</span>
             </div>
             <div class="min-w-0">
               <h1 class="text-lg sm:text-xl font-bold tracking-tight text-stone-900 dark:text-white truncate">TRABZON LİMCERA</h1>
