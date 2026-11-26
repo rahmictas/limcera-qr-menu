@@ -46,11 +46,20 @@
             </div>
           </div>
 
-          <!-- Sağ Üst KDV Rozeti ve Karanlık Mod Butonu -->
+          <!-- Sağ Üst Hızlı Wi-Fi, KDV Rozeti ve Karanlık Mod Butonu -->
           <div class="flex items-center gap-2 flex-shrink-0">
+            <button id="headerWifiBtn" onclick="scrollToWifi()"
+              class="hidden items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200/70 dark:border-sky-800/70 text-xs font-semibold hover:bg-sky-100 dark:hover:bg-sky-900/60 transition">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
+              </svg>
+              <span>Wi-Fi</span>
+            </button>
+
             <span class="hidden sm:inline-block text-xs font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 px-2.5 py-1 rounded-full">
               KDV Dahildir
             </span>
+
             <button onclick="toggleTheme()" aria-label="Tema Değiştir"
               class="p-2 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-amber-400 hover:bg-stone-200 dark:hover:bg-stone-700 transition">
               <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,6 +125,74 @@
 
       <!-- Kategorilere Göre Menü Listesi -->
       <div id="menuContainer" class="space-y-8"></div>
+
+      <!-- WI-FI VE GOOGLE YORUM ALT ALANI -->
+      <footer id="footerInfoSection" class="hidden mt-12 pt-8 border-t border-stone-200 dark:border-stone-800">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Wi-Fi Bilgi Kartı -->
+          <div id="wifiCard" class="hidden bg-white dark:bg-stone-900 rounded-2xl p-4 border border-stone-200/80 dark:border-stone-800 shadow-sm flex flex-col justify-between transition">
+            <div>
+              <div class="flex items-center gap-2 text-sky-700 dark:text-sky-400 font-bold text-sm mb-2">
+                <span class="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/80">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
+                  </svg>
+                </span>
+                <span>Ücretsiz Wi-Fi Bağlantısı</span>
+              </div>
+              <div class="space-y-1 text-xs text-stone-600 dark:text-stone-300">
+                <div class="flex items-center justify-between bg-stone-50 dark:bg-stone-800/70 px-3 py-2 rounded-xl">
+                  <span class="text-stone-400">Ağ Adı:</span>
+                  <span id="wifiNameDisplay" class="font-bold text-stone-900 dark:text-white select-all"></span>
+                </div>
+                <div id="wifiPassRow" class="flex items-center justify-between bg-stone-50 dark:bg-stone-800/70 px-3 py-2 rounded-xl">
+                  <span class="text-stone-400">Şifre:</span>
+                  <span id="wifiPassDisplay" class="font-mono font-bold text-stone-900 dark:text-amber-300 select-all"></span>
+                </div>
+              </div>
+            </div>
+
+            <button id="copyWifiBtn" onclick="copyWifiPassword()"
+              class="mt-3 w-full py-2 px-3 rounded-xl bg-stone-900 dark:bg-stone-800 text-white dark:text-stone-100 text-xs font-semibold hover:bg-stone-800 dark:hover:bg-stone-700 active:scale-[0.99] transition flex items-center justify-center gap-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+              <span id="copyWifiBtnText">Şifreyi Kopyala</span>
+            </button>
+          </div>
+
+          <!-- Google Yorum ve Sosyal Medya Kartı -->
+          <div id="reviewCard" class="hidden bg-white dark:bg-stone-900 rounded-2xl p-4 border border-stone-200/80 dark:border-stone-800 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="font-bold text-sm text-stone-900 dark:text-white">Deneyiminizi Paylaşın</span>
+                <span class="text-amber-400 text-sm tracking-tight">★★★★★</span>
+              </div>
+              <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+                Trabzon Limcera'daki kahve ve lezzet deneyiminizi Google'da değerlendirerek bize destek olabilirsiniz.
+              </p>
+            </div>
+
+            <div class="mt-3 flex flex-wrap gap-2">
+              <a id="googleReviewBtn" href="#" target="_blank" rel="noopener noreferrer"
+                class="hidden flex-1 min-w-[140px] py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                <span>Google'da Yorum Yap</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+              </a>
+              <a id="instagramBtn" href="#" target="_blank" rel="noopener noreferrer"
+                class="hidden py-2 px-3 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-semibold transition flex items-center justify-center gap-1.5">
+                <span>Instagram</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <p class="text-center text-[11px] text-stone-400 dark:text-stone-600 mt-6">
+          Trabzon Limcera • Afiyet Olsun
+        </p>
+      </footer>
     </main>
   </div>
 
@@ -156,6 +233,7 @@
     let selectedCategory = 'TÜMÜ';
     let lastScrollY = 0;
     let navigatedFromMenu = false;
+    let currentWifiPassword = '';
 
     function toggleTheme() {
       const isDark = document.documentElement.classList.toggle('dark');
@@ -164,6 +242,40 @@
 
     function scrollFeatured(amount) {
       document.getElementById('featuredTrack').scrollBy({ left: amount, behavior: 'smooth' });
+    }
+
+    function scrollToWifi() {
+      const target = document.getElementById('footerInfoSection');
+      if (!target) return;
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const wifiCard = document.getElementById('wifiCard');
+      wifiCard.classList.add('ring-2', 'ring-sky-500');
+      setTimeout(() => wifiCard.classList.remove('ring-2', 'ring-sky-500'), 1800);
+    }
+
+    function copyWifiPassword() {
+      if (!currentWifiPassword) return;
+      const btnText = document.getElementById('copyWifiBtnText');
+      const onCopied = () => {
+        btnText.textContent = 'Şifre Kopyalandı ✓';
+        setTimeout(() => { btnText.textContent = 'Şifreyi Kopyala'; }, 2000);
+      };
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(currentWifiPassword).then(onCopied).catch(() => fallbackCopy(currentWifiPassword, onCopied));
+      } else {
+        fallbackCopy(currentWifiPassword, onCopied);
+      }
+    }
+
+    function fallbackCopy(text, callback) {
+      const input = document.createElement('input');
+      input.value = text;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      callback();
     }
 
     function normalizeTR(text) {
@@ -177,6 +289,61 @@
         .replace(/ş/g, 's')
         .replace(/ö/g, 'o')
         .replace(/ç/g, 'c');
+    }
+
+    async function fetchSiteSettings() {
+      const { data, error } = await sb
+        .from('site_ayarlari')
+        .select('*')
+        .eq('id', 1)
+        .maybeSingle();
+
+      if (error || !data) return;
+
+      const wifiName = (data.wifi_adi || '').trim();
+      const wifiPass = (data.wifi_sifresi || '').trim();
+      const googleUrl = (data.google_yorum_linki || '').trim();
+      const instaUrl = (data.instagram_linki || '').trim();
+
+      let hasAnyFooter = false;
+
+      if (wifiName || wifiPass) {
+        hasAnyFooter = true;
+        currentWifiPassword = wifiPass;
+        document.getElementById('wifiNameDisplay').textContent = wifiName || 'Limcera Wi-Fi';
+        if (wifiPass) {
+          document.getElementById('wifiPassDisplay').textContent = wifiPass;
+          document.getElementById('wifiPassRow').classList.remove('hidden');
+          document.getElementById('copyWifiBtn').classList.remove('hidden');
+        } else {
+          document.getElementById('wifiPassRow').classList.add('hidden');
+          document.getElementById('copyWifiBtn').classList.add('hidden');
+        }
+        document.getElementById('wifiCard').classList.remove('hidden');
+
+        const headerWifiBtn = document.getElementById('headerWifiBtn');
+        headerWifiBtn.classList.remove('hidden');
+        headerWifiBtn.classList.add('flex');
+      }
+
+      if (googleUrl || instaUrl) {
+        hasAnyFooter = true;
+        document.getElementById('reviewCard').classList.remove('hidden');
+        if (googleUrl) {
+          const gBtn = document.getElementById('googleReviewBtn');
+          gBtn.href = googleUrl.startsWith('http') ? googleUrl : 'https://' + googleUrl;
+          gBtn.classList.remove('hidden');
+        }
+        if (instaUrl) {
+          const iBtn = document.getElementById('instagramBtn');
+          iBtn.href = instaUrl.startsWith('http') ? instaUrl : 'https://' + instaUrl;
+          iBtn.classList.remove('hidden');
+        }
+      }
+
+      if (hasAnyFooter) {
+        document.getElementById('footerInfoSection').classList.remove('hidden');
+      }
     }
 
     async function fetchMenu() {
@@ -428,6 +595,7 @@
 
     window.addEventListener('popstate', handleInitialHash);
     document.getElementById('searchInput').addEventListener('input', renderMenu);
+    fetchSiteSettings();
     fetchMenu();
   </script>
 </body>
