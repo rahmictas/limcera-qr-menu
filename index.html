@@ -26,19 +26,31 @@
 
   <!-- ANA MENÜ GÖRÜNÜMÜ -->
   <div id="menuView">
-    <!-- Üst Başlık ve Arama -->
+    <!-- Üst Başlık, Logo ve Arama -->
     <header class="sticky top-0 z-30 bg-white/95 dark:bg-stone-900/95 backdrop-blur border-b border-stone-200 dark:border-stone-800 shadow-sm transition-colors">
-      <div class="max-w-3xl mx-auto px-4 pt-4 pb-3">
+      <div class="max-w-3xl mx-auto px-4 pt-3.5 pb-3">
         <div class="flex items-center justify-between mb-3 gap-2">
-          <div>
-            <h1 class="text-xl font-bold tracking-tight text-stone-900 dark:text-white">TRABZON LİMCERA</h1>
-            <p class="text-xs text-stone-500 dark:text-stone-400">Hoş Geldiniz • Dijital Menü</p>
+          <!-- Sol Üst Logo ve İşletme Adı -->
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-11 h-11 rounded-xl bg-stone-900 dark:bg-amber-500 text-white dark:text-stone-950 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm border border-stone-200 dark:border-stone-700">
+              <img id="siteLogoImg"
+                src="https://pmhqpdrhlyncwsyehuvl.supabase.co/storage/v1/object/public/menu-gorselleri/site-logo.webp"
+                alt="Trabzon Limcera Logo"
+                onerror="this.style.display='none'; document.getElementById('siteLogoFallback').classList.remove('hidden');"
+                class="w-full h-full object-contain bg-white dark:bg-stone-900 p-0.5" />
+              <span id="siteLogoFallback" class="hidden font-extrabold text-base tracking-tighter">TL</span>
+            </div>
+            <div class="min-w-0">
+              <h1 class="text-lg sm:text-xl font-bold tracking-tight text-stone-900 dark:text-white truncate">TRABZON LİMCERA</h1>
+              <p class="text-xs text-stone-500 dark:text-stone-400 truncate">Hoş Geldiniz • Dijital Menü</p>
+            </div>
           </div>
-          <div class="flex items-center gap-2">
+
+          <!-- Sağ Üst KDV Rozeti ve Tema Butonu -->
+          <div class="flex items-center gap-2 flex-shrink-0">
             <span class="hidden sm:inline-block text-xs font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 px-2.5 py-1 rounded-full">
               KDV Dahildir
             </span>
-            <!-- Karanlık / Aydınlık Mod Butonu -->
             <button onclick="toggleTheme()" aria-label="Tema Değiştir"
               class="p-2 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-amber-400 hover:bg-stone-200 dark:hover:bg-stone-700 transition">
               <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -65,16 +77,39 @@
       </div>
     </header>
 
-    <!-- Menü Listesi -->
+    <!-- İçerik Alanı -->
     <main class="max-w-3xl mx-auto px-4 pt-5">
       <div id="loading" class="text-center py-12 text-stone-500 dark:text-stone-400 text-sm">Menü yükleniyor...</div>
+
+      <!-- YATAY KAYDIRILABİLİR ÖNERİLEN ÜRÜNLER ŞERİDİ -->
+      <section id="featuredSection" class="hidden mb-7">
+        <div class="flex items-center justify-between mb-2.5">
+          <div class="flex items-center gap-1.5">
+            <span class="text-amber-500 text-base">★</span>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-stone-900 dark:text-stone-100">Önerilen Lezzetler</h2>
+          </div>
+          <div class="hidden sm:flex items-center gap-1">
+            <button onclick="scrollFeatured(-220)" aria-label="Sola Kaydır"
+              class="p-1 rounded-lg bg-stone-200/70 dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-300 dark:hover:bg-stone-700 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <button onclick="scrollFeatured(220)" aria-label="Sağa Kaydır"
+              class="p-1 rounded-lg bg-stone-200/70 dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-300 dark:hover:bg-stone-700 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="featuredTrack" class="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-1"></div>
+      </section>
+
+      <!-- Ana Menü Listesi -->
       <div id="menuContainer" class="space-y-8"></div>
     </main>
   </div>
 
   <!-- ÜRÜN DETAY SAYFASI -->
   <div id="productDetailView" class="hidden min-h-screen bg-stone-50 dark:bg-stone-950">
-    <!-- Detay Üst Çubuğu -->
     <header class="sticky top-0 z-30 bg-white/95 dark:bg-stone-900/95 backdrop-blur border-b border-stone-200 dark:border-stone-800">
       <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
         <button onclick="closeProduct()"
@@ -97,7 +132,6 @@
       </div>
     </header>
 
-    <!-- Detay İçeriği -->
     <main id="productDetailContent" class="max-w-3xl mx-auto px-4 pt-5 pb-12"></main>
   </div>
 
@@ -117,6 +151,10 @@
       localStorage.setItem('limcera-theme', isDark ? 'dark' : 'light');
     }
 
+    function scrollFeatured(amount) {
+      document.getElementById('featuredTrack').scrollBy({ left: amount, behavior: 'smooth' });
+    }
+
     async function fetchMenu() {
       const { data, error } = await sb
         .from('urunler')
@@ -134,9 +172,45 @@
       }
 
       allProducts = data || [];
+      renderFeatured();
       renderCategories();
       renderMenu();
       handleInitialHash();
+    }
+
+    function renderFeatured() {
+      const query = document.getElementById('searchInput').value.toLowerCase().trim();
+      const featured = allProducts.filter(p => p.onerilen_mi === true);
+      const section = document.getElementById('featuredSection');
+      const track = document.getElementById('featuredTrack');
+
+      if (featured.length === 0 || query.length > 0) {
+        section.classList.add('hidden');
+        return;
+      }
+
+      section.classList.remove('hidden');
+      track.innerHTML = featured.map(item => `
+        <div onclick="openProduct(${item.id})"
+          class="w-44 sm:w-48 flex-shrink-0 snap-start cursor-pointer group bg-white dark:bg-stone-900 rounded-2xl overflow-hidden border border-stone-200/80 dark:border-stone-800 shadow-sm hover:border-amber-400 dark:hover:border-amber-600 transition">
+          <div class="relative w-full h-28 bg-stone-100 dark:bg-stone-800 overflow-hidden flex items-center justify-center">
+            ${item.gorsel_url
+              ? `<img src="${item.gorsel_url}" alt="${item.ad}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" />`
+              : `<span class="text-xs font-bold text-stone-300 dark:text-stone-600">LİMCERA</span>`
+            }
+            <span class="absolute top-2 left-2 bg-amber-500 text-stone-950 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+              ★ Önerilen
+            </span>
+          </div>
+          <div class="p-2.5">
+            <div class="text-[10px] font-semibold text-stone-400 dark:text-stone-500 truncate">${item.kategori}</div>
+            <h3 class="font-bold text-xs text-stone-900 dark:text-stone-100 truncate mt-0.5">${item.ad}</h3>
+            <div class="mt-1.5 font-extrabold text-sm text-amber-700 dark:text-amber-400">
+              ${Number(item.fiyat).toLocaleString('tr-TR')} ₺
+            </div>
+          </div>
+        </div>
+      `).join('');
     }
 
     function renderCategories() {
@@ -161,6 +235,7 @@
     }
 
     function renderMenu() {
+      renderFeatured();
       const query = document.getElementById('searchInput').value.toLowerCase().trim();
       const filtered = allProducts.filter(p => {
         const matchesCat = selectedCategory === 'TÜMÜ' || p.kategori === selectedCategory;
@@ -229,7 +304,6 @@
 
       document.getElementById('productDetailContent').innerHTML = `
         <article class="bg-white dark:bg-stone-900 rounded-3xl overflow-hidden border border-stone-200/80 dark:border-stone-800 shadow-sm">
-          <!-- Büyük Ürün Görseli -->
           <div class="w-full aspect-[4/3] sm:aspect-[16/10] bg-stone-100 dark:bg-stone-800 flex items-center justify-center overflow-hidden">
             ${item.gorsel_url
               ? `<img src="${item.gorsel_url}" alt="${item.ad}" class="w-full h-full object-cover" />`
@@ -240,7 +314,6 @@
             }
           </div>
 
-          <!-- Ürün Bilgileri -->
           <div class="p-6">
             <div class="flex items-center justify-between gap-2 mb-2">
               <span class="text-xs font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 px-3 py-1 rounded-full">
