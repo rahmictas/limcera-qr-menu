@@ -32,12 +32,16 @@
   <!-- YÖNETİM PANELİ -->
   <div id="adminSection" class="hidden pb-16">
     <header class="bg-white border-b border-stone-200 sticky top-0 z-20">
-      <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 class="font-bold text-stone-900">Trabzon Limcera • Menü Yönetimi</h1>
           <p class="text-xs text-stone-500" id="userEmail"></p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
+          <label class="cursor-pointer bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-700 transition flex items-center gap-1.5">
+            <span>📄 Rapor Yükle (.html)</span>
+            <input type="file" id="reportFileInput" accept=".html,.htm" class="hidden" onchange="handleReportUpload(event)" />
+          </label>
           <button onclick="openNewModal()" class="bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700">+ Yeni Ürün</button>
           <button onclick="logout()" class="bg-stone-200 text-stone-700 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-stone-300">Çıkış</button>
         </div>
@@ -47,7 +51,7 @@
     <main class="max-w-5xl mx-auto px-4 pt-5">
       <!-- Filtre -->
       <div class="flex flex-col sm:flex-row gap-3 mb-5">
-        <input type="text" id="adminSearch" placeholder="Ürün adı ile filtrele..." oninput="renderAdminList()"
+        <input type="text" id="adminSearch" placeholder="Ürün adı veya kodu ile filtrele..." oninput="renderAdminList()"
           class="flex-1 bg-white px-3.5 py-2 rounded-xl border border-stone-200 text-sm outline-none focus:border-amber-500" />
         <select id="adminCatFilter" onchange="renderAdminList()" class="bg-white px-3.5 py-2 rounded-xl border border-stone-200 text-sm outline-none">
           <option value="TÜMÜ">Tüm Kategoriler</option>
@@ -64,6 +68,7 @@
     <div class="bg-white rounded-2xl p-5 w-full max-w-md">
       <h2 class="font-bold text-base mb-4">Yeni Ürün Ekle</h2>
       <form id="newProductForm" class="space-y-3">
+        <input type="text" id="newCode" placeholder="Ürün Kodu (Örn: 153.196 - İsteğe bağlı)" class="w-full px-3 py-2 border rounded-xl text-sm" />
         <input type="text" id="newCat" placeholder="Kategori (Örn: TATLI)" required class="w-full px-3 py-2 border rounded-xl text-sm uppercase" />
         <input type="text" id="newName" placeholder="Ürün Adı" required class="w-full px-3 py-2 border rounded-xl text-sm" />
         <input type="text" id="newDesc" placeholder="Açıklama (İsteğe bağlı)" class="w-full px-3 py-2 border rounded-xl text-sm" />
@@ -76,16 +81,54 @@
     </div>
   </div>
 
+  <!-- TOPLU FİYAT GÜNCELLEME ÖNİZLEME PENCERESİ -->
+  <div id="bulkModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-xl overflow-hidden">
+      <div class="p-4 border-b border-stone-200 flex items-center justify-between bg-stone-50">
+        <div>
+          <h2 class="font-bold text-base text-stone-900">Toplu Fiyat Güncelleme Önizlemesi</h2>
+          <p id="bulkSummary" class="text-xs text-stone-500 mt-0.5"></p>
+        </div>
+        <button onclick="closeBulkModal()" class="text-stone-400 hover:text-stone-700 text-lg font-bold px-2">✕</button>
+      </div>
+
+      <!-- Ayar Çubuğu -->
+      <div class="px-4 py-2.5 bg-amber-50/70 border-b border-amber-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <label class="flex items-center gap-2 font-medium text-stone-700 cursor-pointer">
+          <input type="checkbox" id="includeVatCheckbox" checked onchange="recalculateBulkPrices()" class="rounded text-amber-600" />
+          <span>Rapordaki fiyatlara KDV ekle (%10 / %20) ve tam TL'ye yuvarla</span>
+        </label>
+        <span class="text-stone-500">Mevcut fotoğraf ve açıklamalar korunur</span>
+      </div>
+
+      <!-- Liste Alanı -->
+      <div id="bulkPreviewBody" class="p-4 overflow-y-auto flex-1 space-y-5"></div>
+
+      <!-- Alt Butonlar -->
+      <div class="p-4 border-t border-stone-200 bg-stone-50 flex items-center justify-between gap-3">
+        <span id="bulkProgress" class="text-xs font-semibold text-blue-700"></span>
+        <div class="flex gap-2">
+          <button type="button" onclick="closeBulkModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-stone-600 hover:bg-stone-200">İptal</button>
+          <button type="button" id="applyBulkBtn" onclick="applyBulkUpdates()" class="px-5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 transition">
+            Seçili Güncellemeleri Uygula
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // 1. BURAYA KENDİ SUPABASE BİLGİLERİNİZİ GİRİN
+    // BURAYA MEVCUT SUPABASE ANON KEY BİLGİNİZİ YAPIŞTIRIN
     const SUPABASE_URL = 'https://pmhqpdrhlyncwsyehuvl.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtaHFwZHJobHluY3dzeWVodXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU2MTY3NTMsImV4cCI6MjExMTE5Mjc1M30.uJRs7wr232jW0sYVQUuXGkCeLcYFOqvBE5po7VyYpjs';
+    const SUPABASE_ANON_KEY = 'BURAYA_MEVCUT_ANON_KEYINIZI_YAPISTIRIN';
     const BUCKET_NAME = 'menu-gorselleri';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let products = [];
+    let parsedReportRows = [];
+    let bulkChanges = [];
+    let bulkNewItems = [];
 
-    // Oturum kontrolü
     async function checkSession() {
       const { data: { session } } = await sb.auth.getSession();
       if (session) {
@@ -118,7 +161,7 @@
     async function loadProducts() {
       const { data, error } = await sb.from('urunler').select('*').order('kategori').order('id');
       if (!error) {
-        products = data;
+        products = data || [];
         const cats = [...new Set(products.map(p => p.kategori))];
         const select = document.getElementById('adminCatFilter');
         select.innerHTML = `<option value="TÜMÜ">Tüm Kategoriler (${products.length})</option>` + 
@@ -131,12 +174,12 @@
       const q = document.getElementById('adminSearch').value.toLowerCase();
       const cat = document.getElementById('adminCatFilter').value;
       const filtered = products.filter(p => 
-        (cat === 'TÜMÜ' || p.kategori === cat) && p.ad.toLowerCase().includes(q)
+        (cat === 'TÜMÜ' || p.kategori === cat) && 
+        (p.ad.toLowerCase().includes(q) || (p.urun_kodu && p.urun_kodu.toLowerCase().includes(q)))
       );
 
       document.getElementById('adminList').innerHTML = filtered.map(p => `
         <div class="bg-white p-4 rounded-2xl border ${p.aktif_mi ? 'border-stone-200' : 'border-red-200 bg-red-50/30'} shadow-sm flex gap-4">
-          <!-- Görsel ve Yükleme Alanı -->
           <div class="w-24 flex-shrink-0 flex flex-col items-center gap-2">
             <div class="w-24 h-24 rounded-xl bg-stone-100 overflow-hidden border border-stone-200 flex items-center justify-center relative">
               ${p.gorsel_url 
@@ -150,10 +193,12 @@
             </label>
           </div>
 
-          <!-- Bilgi Düzenleme Alanı -->
           <div class="flex-1 space-y-2">
             <div class="flex items-center justify-between gap-2">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded">${p.kategori}</span>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded">${p.kategori}</span>
+                ${p.urun_kodu ? `<span class="text-[10px] text-stone-400 font-mono">#${p.urun_kodu}</span>` : ''}
+              </div>
               <label class="flex items-center gap-1.5 text-xs cursor-pointer">
                 <input type="checkbox" ${p.aktif_mi ? 'checked' : ''} onchange="toggleActive(${p.id}, this.checked)" class="rounded text-amber-600" />
                 <span>${p.aktif_mi ? 'Yayında' : 'Gizli'}</span>
@@ -177,21 +222,23 @@
       `).join('');
     }
 
-    // Görseli tarayıcıda sıkıştırıp WebP yapma fonksiyonu (Max 800px)
+    // Görseli tarayıcıda sıkıştırıp WebP yapma fonksiyonu (Detay sayfası için 1000px)
     function compressImageToWebP(file) {
       return new Promise((resolve) => {
         const reader = new FileReader();
+        reader.onerror = () => resolve(file);
         reader.onload = (event) => {
           const img = new Image();
+          img.onerror = () => resolve(file);
           img.onload = () => {
             const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 800;
+            const MAX_WIDTH = 1000;
             const scaleSize = img.width > MAX_WIDTH ? MAX_WIDTH / img.width : 1;
             canvas.width = img.width * scaleSize;
             canvas.height = img.height * scaleSize;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            canvas.toBlob((blob) => resolve(blob), 'image/webp', 0.82);
+            canvas.toBlob((blob) => resolve(blob || file), 'image/webp', 0.85);
           };
           img.src = event.target.result;
         };
@@ -207,11 +254,15 @@
       btn.textContent = 'Yükleniyor...';
 
       const webpBlob = await compressImageToWebP(file);
-      const fileName = `urun-${productId}-${Date.now()}.webp`;
+      const isWebp = webpBlob.type === 'image/webp';
+      const fileName = `urun-${productId}-${Date.now()}.${isWebp ? 'webp' : 'jpg'}`;
 
       const { error: uploadError } = await sb.storage
         .from(BUCKET_NAME)
-        .upload(fileName, webpBlob, { contentType: 'image/webp', upsert: true });
+        .upload(fileName, webpBlob, {
+          contentType: webpBlob.type || 'image/webp',
+          upsert: true
+        });
 
       if (uploadError) {
         alert('Fotoğraf yüklenemedi: ' + uploadError.message);
@@ -220,7 +271,6 @@
       }
 
       const { data: { publicUrl } } = sb.storage.from(BUCKET_NAME).getPublicUrl(fileName);
-
       await sb.from('urunler').update({ gorsel_url: publicUrl }).eq('id', productId);
       btn.textContent = 'Kaydet';
       loadProducts();
@@ -251,12 +301,13 @@
 
     document.getElementById('newProductForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const urun_kodu = document.getElementById('newCode').value.trim() || null;
       const kategori = document.getElementById('newCat').value.toUpperCase().trim();
       const ad = document.getElementById('newName').value.trim();
       const aciklama = document.getElementById('newDesc').value.trim();
       const fiyat = parseFloat(document.getElementById('newPrice').value);
 
-      const { error } = await sb.from('urunler').insert([{ kategori, ad, aciklama, fiyat, aktif_mi: true }]);
+      const { error } = await sb.from('urunler').insert([{ urun_kodu, kategori, ad, aciklama, fiyat, aktif_mi: true }]);
       if (!error) {
         closeNewModal();
         e.target.reset();
@@ -265,6 +316,256 @@
         alert('Hata: ' + error.message);
       }
     });
+
+    // --- HTML RAPOR OKUMA VE TOPLU FİYAT GÜNCELLEME ---
+    function cleanCellText(cell) {
+      return cell ? cell.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '';
+    }
+
+    function handleReportUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(e.target.result, 'text/html');
+        const rows = Array.from(doc.querySelectorAll('tr'));
+
+        let colCode = 1, colName = 2, colCat = 4, colPrice = 23, colVat = 27;
+        let headerFound = false;
+
+        for (const row of rows) {
+          const cells = Array.from(row.querySelectorAll('td, th')).map(cleanCellText);
+          const idxName = cells.findIndex(c => c.toLowerCase().includes('ürün adı'));
+          const idxPrice = cells.findIndex(c => c.toLowerCase().includes('satış fiyatı1'));
+          if (idxName !== -1 && idxPrice !== -1) {
+            const idxCode = cells.findIndex(c => c.toLowerCase().includes('ürün kodu'));
+            const idxCat = cells.findIndex(c => c.toLowerCase() === 'ana grup' || c.toLowerCase() === 'grup');
+            const idxVat = cells.findIndex(c => c.toLowerCase().includes('satış kdv'));
+            if (idxCode !== -1) colCode = idxCode;
+            colName = idxName;
+            if (idxCat !== -1) colCat = idxCat;
+            colPrice = idxPrice;
+            if (idxVat !== -1) colVat = idxVat;
+            headerFound = true;
+            break;
+          }
+        }
+
+        if (!headerFound) {
+          alert('Yüklenen HTML dosyasında Webticari ürün listesi tablosu bulunamadı.');
+          event.target.value = '';
+          return;
+        }
+
+        parsedReportRows = [];
+        for (const row of rows) {
+          const cells = Array.from(row.querySelectorAll('td'));
+          if (cells.length <= colPrice) continue;
+
+          const code = cleanCellText(cells[colCode]);
+          const name = cleanCellText(cells[colName]);
+          const cat = cleanCellText(cells[colCat]) || 'DİĞER';
+          const rawPriceStr = cleanCellText(cells[colPrice]).replace(/,/g, '');
+          const vatStr = cleanCellText(cells[colVat]).replace('%', '').replace(/,/g, '');
+
+          if (!name || name === 'Ürün Adı' || code.startsWith('ÖZEL')) continue;
+          const rawPrice = parseFloat(rawPriceStr);
+          if (isNaN(rawPrice) || rawPrice <= 0) continue;
+
+          const vat = isNaN(parseFloat(vatStr)) ? 10 : parseFloat(vatStr);
+          parsedReportRows.push({ code, name, cat, rawPrice, vat });
+        }
+
+        event.target.value = '';
+        recalculateBulkPrices();
+        document.getElementById('bulkModal').classList.replace('hidden', 'flex');
+      };
+      reader.readAsText(file, 'UTF-8');
+    }
+
+    function recalculateBulkPrices() {
+      const addVat = document.getElementById('includeVatCheckbox').checked;
+      bulkChanges = [];
+      bulkNewItems = [];
+      let unchangedCount = 0;
+
+      const byCode = new Map();
+      const byName = new Map();
+      products.forEach(p => {
+        if (p.urun_kodu) byCode.set(p.urun_kodu.trim().toUpperCase(), p);
+        byName.set(p.ad.trim().toLocaleUpperCase('tr-TR'), p);
+      });
+
+      const seenDbIds = new Set();
+
+      for (const item of parsedReportRows) {
+        const finalPrice = addVat 
+          ? Math.round(item.rawPrice * (1 + item.vat / 100)) 
+          : Number(item.rawPrice.toFixed(2));
+
+        const matched = (item.code && byCode.get(item.code.toUpperCase())) || 
+                        byName.get(item.name.toLocaleUpperCase('tr-TR'));
+
+        if (matched) {
+          if (seenDbIds.has(matched.id)) continue;
+          seenDbIds.add(matched.id);
+
+          if (Number(matched.fiyat) !== finalPrice) {
+            bulkChanges.push({
+              id: matched.id,
+              code: matched.urun_kodu || item.code,
+              name: matched.ad,
+              oldPrice: Number(matched.fiyat),
+              newPrice: finalPrice,
+              selected: true
+            });
+          } else {
+            unchangedCount++;
+          }
+        } else {
+          bulkNewItems.push({
+            code: item.code,
+            cat: item.cat.toLocaleUpperCase('tr-TR'),
+            name: item.name,
+            newPrice: finalPrice,
+            selected: false
+          });
+        }
+      }
+
+      document.getElementById('bulkSummary').textContent = 
+        `${parsedReportRows.length} ürün okundu • ${bulkChanges.length} fiyat değişikliği • ${unchangedCount} ürün aynı • ${bulkNewItems.length} yeni kayıt`;
+
+      renderBulkPreview();
+    }
+
+    function renderBulkPreview() {
+      const container = document.getElementById('bulkPreviewBody');
+      let html = '';
+
+      if (bulkChanges.length === 0) {
+        html += `<div class="text-center py-6 bg-stone-50 rounded-xl text-sm text-stone-500">Mevcut ürünlerin tamamının fiyatı rapordaki tutarlarla aynı.</div>`;
+      } else {
+        html += `
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">Fiyatı Güncellenecek Ürünler (${bulkChanges.length})</h3>
+            <div class="border border-stone-200 rounded-xl overflow-hidden">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-stone-100 text-stone-600 font-semibold">
+                  <tr>
+                    <th class="p-2.5 w-8"><input type="checkbox" checked onchange="toggleAllBulkChanges(this.checked)" /></th>
+                    <th class="p-2.5">Ürün</th>
+                    <th class="p-2.5 text-right">Eski Fiyat</th>
+                    <th class="p-2.5 text-right">Yeni Fiyat (₺)</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-100">
+                  ${bulkChanges.map((c, idx) => `
+                    <tr class="hover:bg-stone-50">
+                      <td class="p-2.5"><input type="checkbox" ${c.selected ? 'checked' : ''} onchange="bulkChanges[${idx}].selected = this.checked" /></td>
+                      <td class="p-2.5">
+                        <div class="font-semibold text-stone-900">${c.name}</div>
+                        <div class="text-[10px] text-stone-400">${c.code || ''}</div>
+                      </td>
+                      <td class="p-2.5 text-right text-stone-400 line-through">${c.oldPrice} ₺</td>
+                      <td class="p-2.5 text-right">
+                        <input type="number" step="0.01" value="${c.newPrice}" onchange="bulkChanges[${idx}].newPrice = parseFloat(this.value)"
+                          class="w-20 px-2 py-1 border rounded-lg text-right font-bold text-emerald-700" />
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+
+      if (bulkNewItems.length > 0) {
+        html += `
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-amber-700 mb-2">Menüde Olmayan Yeni Ürünler (${bulkNewItems.length}) — İsterseniz Seçip Ekleyin</h3>
+            <div class="border border-amber-200 rounded-xl overflow-hidden">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-amber-50 text-amber-900 font-semibold">
+                  <tr>
+                    <th class="p-2.5 w-8">Ekle</th>
+                    <th class="p-2.5">Kategori / Ürün</th>
+                    <th class="p-2.5 text-right">Fiyat</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-amber-100">
+                  ${bulkNewItems.map((n, idx) => `
+                    <tr>
+                      <td class="p-2.5"><input type="checkbox" ${n.selected ? 'checked' : ''} onchange="bulkNewItems[${idx}].selected = this.checked" /></td>
+                      <td class="p-2.5">
+                        <span class="text-[10px] font-bold text-amber-700 mr-1">[${n.cat}]</span>
+                        <span class="font-medium text-stone-800">${n.name}</span>
+                      </td>
+                      <td class="p-2.5 text-right font-bold">${n.newPrice} ₺</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function toggleAllBulkChanges(checked) {
+      bulkChanges.forEach(c => c.selected = checked);
+      renderBulkPreview();
+    }
+
+    function closeBulkModal() {
+      document.getElementById('bulkModal').classList.replace('flex', 'hidden');
+      document.getElementById('bulkProgress').textContent = '';
+    }
+
+    async function applyBulkUpdates() {
+      const toUpdate = bulkChanges.filter(c => c.selected && !isNaN(c.newPrice));
+      const toInsert = bulkNewItems.filter(n => n.selected && !isNaN(n.newPrice));
+
+      if (toUpdate.length === 0 && toInsert.length === 0) {
+        alert('Güncellenecek veya eklenecek seçili ürün bulunmuyor.');
+        return;
+      }
+
+      const btn = document.getElementById('applyBulkBtn');
+      const progress = document.getElementById('bulkProgress');
+      btn.disabled = true;
+
+      for (let i = 0; i < toUpdate.length; i += 20) {
+        const chunk = toUpdate.slice(i, i + 20);
+        progress.textContent = `Fiyatlar güncelleniyor (${Math.min(i + 20, toUpdate.length)}/${toUpdate.length})...`;
+        await Promise.all(
+          chunk.map(item => sb.from('urunler').update({ fiyat: item.newPrice }).eq('id', item.id))
+        );
+      }
+
+      if (toInsert.length > 0) {
+        progress.textContent = 'Yeni ürünler ekleniyor...';
+        await sb.from('urunler').insert(
+          toInsert.map(n => ({
+            urun_kodu: n.code || null,
+            kategori: n.cat,
+            ad: n.name,
+            fiyat: n.newPrice,
+            aktif_mi: true
+          }))
+        );
+      }
+
+      btn.disabled = false;
+      closeBulkModal();
+      await loadProducts();
+      alert(`İşlem tamamlandı! ${toUpdate.length} ürünün fiyatı güncellendi${toInsert.length ? `, ${toInsert.length} yeni ürün eklendi` : ''}.`);
+    }
 
     checkSession();
   </script>
