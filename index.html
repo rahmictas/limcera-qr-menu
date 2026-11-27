@@ -17,6 +17,7 @@
     }
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
   <style>
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -48,8 +49,8 @@
 
           <!-- Sağ Üst Hızlı Wi-Fi, KDV Rozeti ve Karanlık Mod Butonu -->
           <div class="flex items-center gap-2 flex-shrink-0">
-            <button id="headerWifiBtn" onclick="scrollToWifi()"
-              class="hidden items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200/70 dark:border-sky-800/70 text-xs font-semibold hover:bg-sky-100 dark:hover:bg-sky-900/60 transition">
+            <button id="headerWifiBtn" onclick="openWifiModal()"
+              class="hidden items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200/70 dark:border-sky-800/70 text-xs font-semibold hover:bg-sky-100 dark:hover:bg-sky-900/60 active:scale-95 transition">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
               </svg>
@@ -132,13 +133,19 @@
           <!-- Wi-Fi Bilgi Kartı -->
           <div id="wifiCard" class="hidden bg-white dark:bg-stone-900 rounded-2xl p-4 border border-stone-200/80 dark:border-stone-800 shadow-sm flex flex-col justify-between transition">
             <div>
-              <div class="flex items-center gap-2 text-sky-700 dark:text-sky-400 font-bold text-sm mb-2">
-                <span class="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/80">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
-                  </svg>
-                </span>
-                <span>Ücretsiz Wi-Fi Bağlantısı</span>
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2 text-sky-700 dark:text-sky-400 font-bold text-sm">
+                  <span class="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/80">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
+                    </svg>
+                  </span>
+                  <span>Ücretsiz Wi-Fi</span>
+                </div>
+                <button type="button" onclick="openWifiModal()"
+                  class="text-[11px] font-semibold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/70 px-2.5 py-1 rounded-lg hover:bg-sky-100 dark:hover:bg-sky-900 transition">
+                  QR Kod
+                </button>
               </div>
               <div class="space-y-1 text-xs text-stone-600 dark:text-stone-300">
                 <div class="flex items-center justify-between bg-stone-50 dark:bg-stone-800/70 px-3 py-2 rounded-xl">
@@ -152,7 +159,7 @@
               </div>
             </div>
 
-            <button id="copyWifiBtn" onclick="copyWifiPassword()"
+            <button id="copyWifiBtn" onclick="copyWifiPassword('footer')"
               class="mt-3 w-full py-2 px-3 rounded-xl bg-stone-900 dark:bg-stone-800 text-white dark:text-stone-100 text-xs font-semibold hover:bg-stone-800 dark:hover:bg-stone-700 active:scale-[0.99] transition flex items-center justify-center gap-1.5">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
@@ -223,6 +230,64 @@
     <main id="productDetailContent" class="max-w-3xl mx-auto px-4 pt-5 pb-12"></main>
   </div>
 
+  <!-- WI-FI POP-UP PENCERESİ -->
+  <div id="wifiModal" onclick="if (event.target === this) closeWifiModal()"
+    class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="bg-white dark:bg-stone-900 w-full max-w-sm rounded-3xl p-5 border border-stone-200 dark:border-stone-800 shadow-2xl relative animate-[fadeIn_0.15s_ease-out]">
+      <!-- Üst Başlık ve Kapat -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="font-bold text-base text-stone-900 dark:text-white leading-tight">Ücretsiz Wi-Fi</h2>
+            <p class="text-[11px] text-stone-500 dark:text-stone-400">Trabzon Limcera Misafir Ağı</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeWifiModal()" aria-label="Kapat"
+          class="p-2 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Otomatik Wi-Fi QR Kodu -->
+      <div id="wifiModalQrWrap" class="hidden flex-col items-center justify-center bg-stone-50 dark:bg-stone-800/60 rounded-2xl p-4 mb-4 border border-stone-200/70 dark:border-stone-700/70">
+        <div class="bg-white p-3 rounded-2xl shadow-sm border border-stone-200">
+          <img id="wifiModalQrImg" src="" alt="Wi-Fi QR Kodu" class="w-44 h-44 block" />
+        </div>
+        <p class="text-[11px] text-center text-stone-500 dark:text-stone-400 mt-2.5 leading-snug">
+          QR koda basılı tutarak veya başka bir telefonun kamerasıyla okutarak bağlanabilirsiniz
+        </p>
+      </div>
+
+      <!-- Ağ Adı ve Şifre Bilgileri -->
+      <div class="space-y-2 text-xs">
+        <div class="flex items-center justify-between bg-stone-100 dark:bg-stone-800 px-3.5 py-2.5 rounded-xl">
+          <span class="text-stone-500 dark:text-stone-400">Ağ Adı</span>
+          <span id="modalWifiNameDisplay" class="font-bold text-sm text-stone-900 dark:text-white select-all"></span>
+        </div>
+        <div id="modalWifiPassRow" class="flex items-center justify-between bg-stone-100 dark:bg-stone-800 px-3.5 py-2.5 rounded-xl">
+          <span class="text-stone-500 dark:text-stone-400">Şifre</span>
+          <span id="modalWifiPassDisplay" class="font-mono font-bold text-sm text-stone-900 dark:text-amber-300 select-all"></span>
+        </div>
+      </div>
+
+      <!-- Tek Dokunuşla Şifre Kopyalama Butonu -->
+      <button id="modalCopyWifiBtn" type="button" onclick="copyWifiPassword('modal')"
+        class="mt-4 w-full py-3 px-4 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-sm active:scale-[0.99] transition flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+        </svg>
+        <span id="modalCopyWifiBtnText">Şifreyi Kopyala</span>
+      </button>
+    </div>
+  </div>
+
   <!-- EN ÜSTE DÖN BUTONU -->
   <button id="scrollTopBtn" onclick="scrollToTop()" aria-label="En Üste Dön"
     class="fixed bottom-5 right-5 z-40 p-3 rounded-full bg-stone-900/90 dark:bg-amber-500/95 text-white dark:text-stone-950 shadow-lg backdrop-blur border border-stone-700/40 dark:border-amber-300/40 opacity-0 pointer-events-none translate-y-3 transition-all duration-200 hover:scale-105 active:scale-95">
@@ -241,6 +306,7 @@
     let selectedCategory = 'TÜMÜ';
     let lastScrollY = 0;
     let navigatedFromMenu = false;
+    let currentWifiName = '';
     let currentWifiPassword = '';
 
     function toggleTheme() {
@@ -269,21 +335,83 @@
       }
     }
 
-    function scrollToWifi() {
-      const target = document.getElementById('footerInfoSection');
-      if (!target) return;
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      const wifiCard = document.getElementById('wifiCard');
-      wifiCard.classList.add('ring-2', 'ring-sky-500');
-      setTimeout(() => wifiCard.classList.remove('ring-2', 'ring-sky-500'), 1800);
+    function generateWifiQrDataUrl(ssid, password, size = 320) {
+      if (typeof qrcode === 'undefined' || !ssid) return '';
+      if (qrcode.stringToBytesFuncs && qrcode.stringToBytesFuncs['UTF-8']) {
+        qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
+      }
+      const escapeWifi = (str) => String(str || '').replace(/([\\;,:"])/g, '\\$1');
+      const payload = password
+        ? `WIFI:T:WPA;S:${escapeWifi(ssid)};P:${escapeWifi(password)};;`
+        : `WIFI:T:nopass;S:${escapeWifi(ssid)};;`;
+
+      const qr = qrcode(0, 'M');
+      qr.addData(payload);
+      qr.make();
+
+      const count = qr.getModuleCount();
+      const quietZone = 2;
+      const totalModules = count + quietZone * 2;
+      const scale = Math.max(4, Math.floor(size / totalModules));
+      const canvasSize = totalModules * scale;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = canvasSize;
+      canvas.height = canvasSize;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+      ctx.fillStyle = '#1c1917';
+      for (let r = 0; r < count; r++) {
+        for (let c = 0; c < count; c++) {
+          if (qr.isDark(r, c)) {
+            ctx.fillRect((c + quietZone) * scale, (r + quietZone) * scale, scale, scale);
+          }
+        }
+      }
+      return canvas.toDataURL('image/png');
     }
 
-    function copyWifiPassword() {
+    function openWifiModal() {
+      const modal = document.getElementById('wifiModal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeWifiModal() {
+      const modal = document.getElementById('wifiModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      document.body.style.overflow = '';
+    }
+
+    function copyWifiPassword(source = 'modal') {
       if (!currentWifiPassword) return;
-      const btnText = document.getElementById('copyWifiBtnText');
       const onCopied = () => {
-        btnText.textContent = 'Şifre Kopyalandı ✓';
-        setTimeout(() => { btnText.textContent = 'Şifreyi Kopyala'; }, 2000);
+        const footerText = document.getElementById('copyWifiBtnText');
+        const modalText = document.getElementById('modalCopyWifiBtnText');
+        const modalBtn = document.getElementById('modalCopyWifiBtn');
+
+        if (footerText) footerText.textContent = 'Şifre Kopyalandı ✓';
+        if (modalText) modalText.textContent = 'Şifre Kopyalandı ✓';
+        if (modalBtn) {
+          modalBtn.classList.remove('bg-sky-600', 'hover:bg-sky-700');
+          modalBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+        }
+
+        setTimeout(() => {
+          if (footerText) footerText.textContent = 'Şifreyi Kopyala';
+          if (modalText) modalText.textContent = 'Şifreyi Kopyala';
+          if (modalBtn) {
+            modalBtn.classList.add('bg-sky-600', 'hover:bg-sky-700');
+            modalBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+          }
+        }, 2000);
       };
 
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -334,16 +462,36 @@
 
       if (wifiName || wifiPass) {
         hasAnyFooter = true;
+        currentWifiName = wifiName || 'Limcera Wi-Fi';
         currentWifiPassword = wifiPass;
-        document.getElementById('wifiNameDisplay').textContent = wifiName || 'Limcera Wi-Fi';
+
+        document.getElementById('wifiNameDisplay').textContent = currentWifiName;
+        document.getElementById('modalWifiNameDisplay').textContent = currentWifiName;
+
         if (wifiPass) {
           document.getElementById('wifiPassDisplay').textContent = wifiPass;
           document.getElementById('wifiPassRow').classList.remove('hidden');
           document.getElementById('copyWifiBtn').classList.remove('hidden');
+
+          document.getElementById('modalWifiPassDisplay').textContent = wifiPass;
+          document.getElementById('modalWifiPassRow').classList.remove('hidden');
+          document.getElementById('modalCopyWifiBtn').classList.remove('hidden');
         } else {
           document.getElementById('wifiPassRow').classList.add('hidden');
           document.getElementById('copyWifiBtn').classList.add('hidden');
+
+          document.getElementById('modalWifiPassRow').classList.add('hidden');
+          document.getElementById('modalCopyWifiBtn').classList.add('hidden');
         }
+
+        const qrDataUrl = generateWifiQrDataUrl(currentWifiName, wifiPass, 340);
+        if (qrDataUrl) {
+          document.getElementById('wifiModalQrImg').src = qrDataUrl;
+          const qrWrap = document.getElementById('wifiModalQrWrap');
+          qrWrap.classList.remove('hidden');
+          qrWrap.classList.add('flex');
+        }
+
         document.getElementById('wifiCard').classList.remove('hidden');
 
         const headerWifiBtn = document.getElementById('headerWifiBtn');
@@ -620,6 +768,9 @@
       showMenuView();
     }
 
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeWifiModal();
+    });
     window.addEventListener('scroll', updateScrollTopButton, { passive: true });
     window.addEventListener('popstate', handleInitialHash);
     document.getElementById('searchInput').addEventListener('input', renderMenu);
