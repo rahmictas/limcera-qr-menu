@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trabzon Limcera | Dijital Menü</title>
+  <title>Trabzon Limcera | Hoş Geldiniz</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -23,27 +23,200 @@
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
-<body class="bg-stone-50 dark:bg-stone-950 text-stone-800 dark:text-stone-100 font-sans antialiased pb-14 transition-colors duration-200">
+<body class="bg-stone-50 dark:bg-stone-950 text-stone-800 dark:text-stone-100 font-sans antialiased transition-colors duration-200">
 
-  <!-- ANA MENÜ GÖRÜNÜMÜ -->
-  <div id="menuView">
+  <!-- 1. AÇILIŞ / KARŞILAMA SAYFASI -->
+  <div id="landingView" class="min-h-screen flex flex-col justify-between pb-10">
+    <!-- Üst Çubuk -->
+    <header class="w-full max-w-2xl mx-auto px-4 pt-4 flex items-center justify-between">
+      <span class="text-xs font-semibold tracking-wider uppercase text-stone-400 dark:text-stone-500">
+        Trabzon Limcera
+      </span>
+
+      <div class="flex items-center gap-2">
+        <button id="landingTopWifiBtn" onclick="openWifiModal()"
+          class="hidden items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200/70 dark:border-sky-800/70 text-xs font-semibold hover:bg-sky-100 dark:hover:bg-sky-900/60 active:scale-95 transition">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
+          </svg>
+          <span>Wi-Fi</span>
+        </button>
+
+        <button onclick="toggleTheme()" aria-label="Tema Değiştir"
+          class="p-2 rounded-xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 text-stone-700 dark:text-amber-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition">
+          <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          <svg class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Orta Vitrin ve Bilgi Kartları -->
+    <main class="w-full max-w-2xl mx-auto px-4 pt-4 flex-1 flex flex-col justify-center">
+      <!-- Karşılama Kartı -->
+      <section class="bg-white dark:bg-stone-900 rounded-3xl p-6 sm:p-7 border border-stone-200/80 dark:border-stone-800 shadow-sm text-center">
+        <!-- Yuvarlak Logo -->
+        <div class="w-20 h-20 mx-auto rounded-full flex items-center justify-center overflow-hidden border-2 border-stone-200/80 dark:border-stone-700 shadow-sm mb-3.5 bg-white dark:bg-stone-800">
+          <img src="https://pmhqpdrhlyncwsyehuvl.supabase.co/storage/v1/object/public/menu-gorselleri/site-logo.png"
+            alt="Trabzon Limcera Logo"
+            onerror="this.style.display='none'; const fb=document.getElementById('landingLogoFallback'); fb.classList.remove('hidden'); fb.classList.add('flex');"
+            class="w-full h-full object-contain" />
+          <span id="landingLogoFallback" class="hidden w-full h-full items-center justify-center bg-stone-900 dark:bg-amber-500 text-white dark:text-stone-950 font-extrabold text-xl tracking-tighter">TL</span>
+        </div>
+
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">
+          TRABZON LİMCERA
+        </h1>
+        <p class="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-1.5 max-w-md mx-auto leading-relaxed">
+          Kahvenin kalbinde taze lezzetler ve sıcak bir mola için hoş geldiniz.
+        </p>
+
+        <!-- Kapak Görseli (Varsa) -->
+        <div id="landingBannerWrap" class="mt-5 rounded-2xl overflow-hidden border border-stone-200/70 dark:border-stone-800 bg-emerald-950">
+          <img src="https://pmhqpdrhlyncwsyehuvl.supabase.co/storage/v1/object/public/menu-gorselleri/site-banner.webp"
+            alt="Trabzon Limcera"
+            onerror="document.getElementById('landingBannerWrap').classList.add('hidden');"
+            class="w-full h-auto block" />
+        </div>
+
+        <!-- ANA MENÜ BUTONU -->
+        <button type="button" onclick="enterMenu()"
+          class="mt-6 w-full py-4 px-6 rounded-2xl bg-stone-900 hover:bg-stone-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-stone-950 font-extrabold text-base shadow-md active:scale-[0.99] transition flex items-center justify-center gap-2.5">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+          </svg>
+          <span>Menüyü İncele</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </section>
+
+      <!-- İŞLETME BİLGİ KARTLARI -->
+      <section id="landingInfoGrid" class="hidden grid-cols-1 sm:grid-cols-2 gap-3.5 mt-4">
+        <!-- Açılış - Kapanış Saatleri -->
+        <div id="landingHoursCard" class="hidden bg-white dark:bg-stone-900 rounded-2xl p-4 border border-stone-200/80 dark:border-stone-800 shadow-sm">
+          <div class="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold text-xs uppercase tracking-wider mb-1.5">
+            <span class="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/70">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </span>
+            <span>Çalışma Saatleri</span>
+          </div>
+          <p id="landingHoursText" class="text-sm font-semibold text-stone-800 dark:text-stone-100 leading-relaxed whitespace-pre-line"></p>
+        </div>
+
+        <!-- Ücretsiz Wi-Fi -->
+        <div id="landingWifiCard" class="hidden bg-white dark:bg-stone-900 rounded-2xl p-4 border border-stone-200/80 dark:border-stone-800 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2 text-sky-700 dark:text-sky-400 font-bold text-xs uppercase tracking-wider">
+                <span class="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/70">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
+                  </svg>
+                </span>
+                <span>Ücretsiz Wi-Fi</span>
+              </div>
+              <button type="button" onclick="openWifiModal()"
+                class="text-[11px] font-bold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/70 px-2.5 py-1 rounded-lg hover:bg-sky-100 dark:hover:bg-sky-900 transition">
+                QR Kod Aç
+              </button>
+            </div>
+            <p class="text-xs text-stone-500 dark:text-stone-400">
+              Ağ: <strong id="landingWifiName" class="text-stone-900 dark:text-white"></strong>
+            </p>
+          </div>
+          <button type="button" onclick="openWifiModal()"
+            class="mt-3 w-full py-2 px-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition">
+            Bağlan / Şifreyi Gör
+          </button>
+        </div>
+
+        <!-- Adres Tarifi -->
+        <div id="landingAddressCard" class="hidden bg-white dark:bg-stone-900 rounded-2xl p-4 border border-stone-200/80 dark:border-stone-800 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold text-xs uppercase tracking-wider mb-1.5">
+              <span class="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/70">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+              </span>
+              <span>Adres & Yol Tarifi</span>
+            </div>
+            <p id="landingAddressText" class="text-xs sm:text-sm text-stone-600 dark:text-stone-300 leading-relaxed whitespace-pre-line"></p>
+          </div>
+
+          <a id="landingMapBtn" href="#" target="_blank" rel="noopener noreferrer"
+            class="hidden mt-3 w-full py-2 px-3 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-900 dark:text-stone-100 text-xs font-bold transition flex items-center justify-center gap-1.5">
+            <span>Haritada Yol Tarifi Al</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+          </a>
+        </div>
+
+        <!-- Google Yorum & Sosyal Medya -->
+        <div id="landingSocialCard" class="hidden bg-white dark:bg-stone-900 rounded-2xl p-4 border border-stone-200/80 dark:border-stone-800 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="font-bold text-xs uppercase tracking-wider text-amber-700 dark:text-amber-400">Bizi Değerlendirin</span>
+              <span class="text-amber-400 text-sm">★★★★★</span>
+            </div>
+            <p class="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+              Deneyiminizi Google'da paylaşarak veya Instagram'da bizi takip ederek destek olabilirsiniz.
+            </p>
+          </div>
+
+          <div class="mt-3 flex flex-wrap gap-2">
+            <a id="landingGoogleBtn" href="#" target="_blank" rel="noopener noreferrer"
+              class="hidden flex-1 min-w-[135px] py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+              <span>Google'da Yorum Yap</span>
+            </a>
+            <a id="landingInstaBtn" href="#" target="_blank" rel="noopener noreferrer"
+              class="hidden py-2 px-3 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-semibold transition flex items-center justify-center gap-1.5">
+              <span>Instagram</span>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="text-center text-[11px] text-stone-400 dark:text-stone-600 mt-8 px-4">
+      Trabzon Limcera • Dijital Menü & Bilgi Rehberi
+    </footer>
+  </div>
+
+  <!-- 2. ANA MENÜ GÖRÜNÜMÜ -->
+  <div id="menuView" class="hidden pb-14">
     <!-- Üst Başlık, Yuvarlak Şeffaf Logo ve Arama -->
     <header class="sticky top-0 z-30 bg-white/95 dark:bg-stone-900/95 backdrop-blur border-b border-stone-200 dark:border-stone-800 shadow-sm transition-colors">
       <div class="max-w-3xl mx-auto px-4 pt-3.5 pb-3">
         <div class="flex items-center justify-between mb-3 gap-2">
-          <!-- Sol Üst Yuvarlak Logo ve İşletme Adı -->
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden border border-stone-200/80 dark:border-stone-700/80 shadow-sm">
+          <!-- Sol Üst Açılış Sayfasına Dönüş + Yuvarlak Logo -->
+          <div onclick="showLandingView()" role="button" tabindex="0" title="Açılış Sayfasına Dön"
+            class="flex items-center gap-2.5 min-w-0 cursor-pointer group">
+            <span class="p-1.5 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 group-hover:bg-amber-100 dark:group-hover:bg-stone-700 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </span>
+            <div class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden border border-stone-200/80 dark:border-stone-700/80 shadow-sm">
               <img id="siteLogoImg"
                 src="https://pmhqpdrhlyncwsyehuvl.supabase.co/storage/v1/object/public/menu-gorselleri/site-logo.png"
                 alt="Trabzon Limcera Logo"
                 onerror="this.style.display='none'; const fb=document.getElementById('siteLogoFallback'); fb.classList.remove('hidden'); fb.classList.add('flex');"
                 class="w-full h-full object-contain" />
-              <span id="siteLogoFallback" class="hidden w-full h-full items-center justify-center bg-stone-900 dark:bg-amber-500 text-white dark:text-stone-950 font-extrabold text-base tracking-tighter">TL</span>
+              <span id="siteLogoFallback" class="hidden w-full h-full items-center justify-center bg-stone-900 dark:bg-amber-500 text-white dark:text-stone-950 font-extrabold text-sm tracking-tighter">TL</span>
             </div>
             <div class="min-w-0">
-              <h1 class="text-lg sm:text-xl font-bold tracking-tight text-stone-900 dark:text-white truncate">TRABZON LİMCERA</h1>
-              <p class="text-xs text-stone-500 dark:text-stone-400 truncate">Hoş Geldiniz • Dijital Menü</p>
+              <h2 class="text-base sm:text-lg font-bold tracking-tight text-stone-900 dark:text-white truncate">TRABZON LİMCERA</h2>
+              <p class="text-[11px] text-stone-500 dark:text-stone-400 truncate">Dijital Menü • Bilgi için dokunun</p>
             </div>
           </div>
 
@@ -89,17 +262,6 @@
 
     <!-- Ana İçerik Alanı -->
     <main class="max-w-3xl mx-auto px-4 pt-4">
-      <!-- Karşılama Kapak Görseli (Banner) -->
-      <section id="heroBannerSection" class="mb-6">
-        <div class="w-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-md border border-stone-200/80 dark:border-stone-800 bg-emerald-950">
-          <img id="siteBannerImg"
-            src="https://pmhqpdrhlyncwsyehuvl.supabase.co/storage/v1/object/public/menu-gorselleri/site-banner.webp"
-            alt="Limcera ile Kahvenin Kalbinde Güne Enerjiyle Başla"
-            onerror="document.getElementById('heroBannerSection').dataset.missing='true'; document.getElementById('heroBannerSection').classList.add('hidden');"
-            class="w-full h-auto block" />
-        </div>
-      </section>
-
       <div id="loading" class="text-center py-12 text-stone-500 dark:text-stone-400 text-sm">Menü yükleniyor...</div>
 
       <!-- Yatay Kaydırılabilir Önerilen Ürünler Şeridi -->
@@ -196,14 +358,17 @@
           </div>
         </div>
 
-        <p class="text-center text-[11px] text-stone-400 dark:text-stone-600 mt-6">
-          Trabzon Limcera • Afiyet Olsun
-        </p>
+        <div class="text-center mt-6">
+          <button type="button" onclick="showLandingView()"
+            class="text-xs font-semibold text-stone-500 dark:text-stone-400 hover:text-amber-700 dark:hover:text-amber-400 underline underline-offset-4">
+            ← Adres, Çalışma Saatleri ve Bilgi Ekranına Dön
+          </button>
+        </div>
       </footer>
     </main>
   </div>
 
-  <!-- ÜRÜN DETAY SAYFASI -->
+  <!-- 3. ÜRÜN DETAY SAYFASI -->
   <div id="productDetailView" class="hidden min-h-screen bg-stone-50 dark:bg-stone-950">
     <header class="sticky top-0 z-30 bg-white/95 dark:bg-stone-900/95 backdrop-blur border-b border-stone-200 dark:border-stone-800">
       <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -233,8 +398,7 @@
   <!-- WI-FI POP-UP PENCERESİ -->
   <div id="wifiModal" onclick="if (event.target === this) closeWifiModal()"
     class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-    <div class="bg-white dark:bg-stone-900 w-full max-w-sm rounded-3xl p-5 border border-stone-200 dark:border-stone-800 shadow-2xl relative animate-[fadeIn_0.15s_ease-out]">
-      <!-- Üst Başlık ve Kapat -->
+    <div class="bg-white dark:bg-stone-900 w-full max-w-sm rounded-3xl p-5 border border-stone-200 dark:border-stone-800 shadow-2xl relative">
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-2.5">
           <div class="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400">
@@ -335,6 +499,31 @@
       }
     }
 
+    // --- EKRAN GEÇİŞLERİ ---
+    function showLandingView(pushHistory = true) {
+      if (pushHistory && window.location.hash) {
+        history.pushState({ view: 'landing' }, '', window.location.pathname);
+      }
+      document.title = 'Trabzon Limcera | Hoş Geldiniz';
+      document.getElementById('productDetailView').classList.add('hidden');
+      document.getElementById('menuView').classList.add('hidden');
+      document.getElementById('landingView').classList.remove('hidden');
+      window.scrollTo(0, 0);
+      updateScrollTopButton();
+    }
+
+    function enterMenu(pushHistory = true) {
+      if (pushHistory && window.location.hash !== '#menu') {
+        history.pushState({ view: 'menu' }, '', '#menu');
+      }
+      document.title = 'Trabzon Limcera | Dijital Menü';
+      document.getElementById('landingView').classList.add('hidden');
+      document.getElementById('productDetailView').classList.add('hidden');
+      document.getElementById('menuView').classList.remove('hidden');
+      window.scrollTo(0, lastScrollY);
+      updateScrollTopButton();
+    }
+
     function generateWifiQrDataUrl(ssid, password, size = 320) {
       if (typeof qrcode === 'undefined' || !ssid) return '';
       if (qrcode.stringToBytesFuncs && qrcode.stringToBytesFuncs['UTF-8']) {
@@ -390,7 +579,7 @@
       document.body.style.overflow = '';
     }
 
-    function copyWifiPassword(source = 'modal') {
+    function copyWifiPassword() {
       if (!currentWifiPassword) return;
       const onCopied = () => {
         const footerText = document.getElementById('copyWifiBtnText');
@@ -457,13 +646,45 @@
       const wifiPass = (data.wifi_sifresi || '').trim();
       const googleUrl = (data.google_yorum_linki || '').trim();
       const instaUrl = (data.instagram_linki || '').trim();
+      const hoursText = (data.calisma_saatleri || '').trim();
+      const addressText = (data.adres || '').trim();
+      const mapUrl = (data.harita_linki || '').trim();
 
+      let hasLandingCard = false;
       let hasAnyFooter = false;
 
+      // Çalışma Saatleri
+      if (hoursText) {
+        hasLandingCard = true;
+        document.getElementById('landingHoursText').textContent = hoursText;
+        document.getElementById('landingHoursCard').classList.remove('hidden');
+      }
+
+      // Adres ve Yol Tarifi
+      if (addressText || mapUrl) {
+        hasLandingCard = true;
+        document.getElementById('landingAddressCard').classList.remove('hidden');
+        document.getElementById('landingAddressText').textContent = addressText || 'Konum bilgisi için haritayı açabilirsiniz.';
+        if (mapUrl) {
+          const mapBtn = document.getElementById('landingMapBtn');
+          mapBtn.href = mapUrl.startsWith('http') ? mapUrl : 'https://' + mapUrl;
+          mapBtn.classList.remove('hidden');
+        }
+      }
+
+      // Wi-Fi Bilgileri
       if (wifiName || wifiPass) {
+        hasLandingCard = true;
         hasAnyFooter = true;
         currentWifiName = wifiName || 'Limcera Wi-Fi';
         currentWifiPassword = wifiPass;
+
+        document.getElementById('landingWifiName').textContent = currentWifiName;
+        document.getElementById('landingWifiCard').classList.remove('hidden');
+
+        const topWifiBtn = document.getElementById('landingTopWifiBtn');
+        topWifiBtn.classList.remove('hidden');
+        topWifiBtn.classList.add('flex');
 
         document.getElementById('wifiNameDisplay').textContent = currentWifiName;
         document.getElementById('modalWifiNameDisplay').textContent = currentWifiName;
@@ -499,19 +720,39 @@
         headerWifiBtn.classList.add('flex');
       }
 
+      // Google Yorum & Instagram
       if (googleUrl || instaUrl) {
+        hasLandingCard = true;
         hasAnyFooter = true;
+        document.getElementById('landingSocialCard').classList.remove('hidden');
         document.getElementById('reviewCard').classList.remove('hidden');
+
         if (googleUrl) {
+          const fullGoogle = googleUrl.startsWith('http') ? googleUrl : 'https://' + googleUrl;
+          const lgBtn = document.getElementById('landingGoogleBtn');
+          lgBtn.href = fullGoogle;
+          lgBtn.classList.remove('hidden');
+
           const gBtn = document.getElementById('googleReviewBtn');
-          gBtn.href = googleUrl.startsWith('http') ? googleUrl : 'https://' + googleUrl;
+          gBtn.href = fullGoogle;
           gBtn.classList.remove('hidden');
         }
         if (instaUrl) {
+          const fullInsta = instaUrl.startsWith('http') ? instaUrl : 'https://' + instaUrl;
+          const liBtn = document.getElementById('landingInstaBtn');
+          liBtn.href = fullInsta;
+          liBtn.classList.remove('hidden');
+
           const iBtn = document.getElementById('instagramBtn');
-          iBtn.href = instaUrl.startsWith('http') ? instaUrl : 'https://' + instaUrl;
+          iBtn.href = fullInsta;
           iBtn.classList.remove('hidden');
         }
+      }
+
+      if (hasLandingCard) {
+        const grid = document.getElementById('landingInfoGrid');
+        grid.classList.remove('hidden');
+        grid.classList.add('grid');
       }
 
       if (hasAnyFooter) {
@@ -544,12 +785,6 @@
 
     function renderFeatured() {
       const query = normalizeTR(document.getElementById('searchInput').value).trim();
-      const bannerSection = document.getElementById('heroBannerSection');
-      if (bannerSection && bannerSection.dataset.missing !== 'true') {
-        if (query.length > 0) bannerSection.classList.add('hidden');
-        else bannerSection.classList.remove('hidden');
-      }
-
       const featured = allProducts.filter(p => p.onerilen_mi === true);
       const section = document.getElementById('featuredSection');
       const track = document.getElementById('featuredTrack');
@@ -732,17 +967,10 @@
         ` : ''}
       `;
 
+      document.getElementById('landingView').classList.add('hidden');
       document.getElementById('menuView').classList.add('hidden');
       document.getElementById('productDetailView').classList.remove('hidden');
       window.scrollTo(0, 0);
-      updateScrollTopButton();
-    }
-
-    function showMenuView() {
-      document.title = 'Trabzon Limcera | Dijital Menü';
-      document.getElementById('productDetailView').classList.add('hidden');
-      document.getElementById('menuView').classList.remove('hidden');
-      window.scrollTo(0, lastScrollY);
       updateScrollTopButton();
     }
 
@@ -751,8 +979,8 @@
         navigatedFromMenu = false;
         history.back();
       } else {
-        history.replaceState(null, '', window.location.pathname);
-        showMenuView();
+        history.replaceState({ view: 'menu' }, '', '#menu');
+        enterMenu(false);
       }
     }
 
@@ -765,7 +993,11 @@
           return;
         }
       }
-      showMenuView();
+      if (hash === '#menu') {
+        enterMenu(false);
+        return;
+      }
+      showLandingView(false);
     }
 
     window.addEventListener('keydown', (e) => {
