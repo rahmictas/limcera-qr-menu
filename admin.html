@@ -43,7 +43,7 @@
             ↕️ Sıralama
           </button>
           <button onclick="openSettingsModal()" class="bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-sky-700 transition">
-            📶 Wi-Fi & Yorum
+            🏪 İşletme & Wi-Fi
           </button>
           <label id="bannerUploadLabel" class="cursor-pointer bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-emerald-800 transition flex items-center gap-1.5">
             <span>🎨 Kapak Görseli</span>
@@ -123,21 +123,38 @@
     </div>
   </div>
 
-  <!-- WI-FI VE GOOGLE YORUM AYARLARI PENCERESİ -->
+  <!-- İŞLETME BİLGİLERİ, WI-FI VE GOOGLE YORUM PENCERESİ -->
   <div id="settingsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-xl">
+    <div class="bg-white rounded-2xl p-5 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="font-bold text-base text-stone-900">Wi-Fi & Google Yorum Ayarları</h2>
+        <h2 class="font-bold text-base text-stone-900">Açılış Sayfası, Wi-Fi & Yorum Ayarları</h2>
         <button onclick="closeSettingsModal()" class="text-stone-400 hover:text-stone-700 font-bold px-2">✕</button>
       </div>
-      <form id="settingsForm" class="space-y-3">
+      <form id="settingsForm" class="space-y-3.5">
         <div>
-          <label class="block text-xs font-semibold text-stone-700 mb-1">Wi-Fi Ağ Adı</label>
-          <input type="text" id="setWifiName" oninput="updateAdminWifiQrPreview()" placeholder="Örn: Limcera_Misafir" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-sky-500" />
+          <label class="block text-xs font-semibold text-stone-700 mb-1">Açılış - Kapanış Saatleri</label>
+          <textarea id="setHours" rows="2" placeholder="Örn: Her Gün: 08:30 - 00:00" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-500"></textarea>
         </div>
+
         <div>
-          <label class="block text-xs font-semibold text-stone-700 mb-1">Wi-Fi Şifresi</label>
-          <input type="text" id="setWifiPass" oninput="updateAdminWifiQrPreview()" placeholder="Örn: limcera61" class="w-full px-3 py-2 border rounded-xl text-sm font-mono outline-none focus:border-sky-500" />
+          <label class="block text-xs font-semibold text-stone-700 mb-1">Adres ve Yol Tarifi</label>
+          <textarea id="setAddress" rows="2" placeholder="Örn: Orta Mahalle, ... No: 12 Akçaabat / Trabzon" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-rose-500"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-stone-700 mb-1">Google Haritalar Yol Tarifi Linki (İsteğe bağlı)</label>
+          <input type="url" id="setMapUrl" placeholder="https://maps.google.com/..." class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-rose-500" />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <div>
+            <label class="block text-xs font-semibold text-stone-700 mb-1">Wi-Fi Ağ Adı</label>
+            <input type="text" id="setWifiName" oninput="updateAdminWifiQrPreview()" placeholder="Örn: Limcera_Misafir" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-sky-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-stone-700 mb-1">Wi-Fi Şifresi</label>
+            <input type="text" id="setWifiPass" oninput="updateAdminWifiQrPreview()" placeholder="Örn: limcera61" class="w-full px-3 py-2 border rounded-xl text-sm font-mono outline-none focus:border-sky-500" />
+          </div>
         </div>
 
         <!-- Canlı Wi-Fi QR Kodu Önizleme ve İndirme -->
@@ -146,7 +163,7 @@
             <img id="adminWifiQrImg" src="" alt="Wi-Fi QR" class="w-16 h-16 bg-white p-1 rounded-lg border border-stone-200 flex-shrink-0" />
             <div>
               <div class="text-xs font-bold text-stone-800">Otomatik Wi-Fi QR Kodu</div>
-              <div class="text-[11px] text-stone-500 leading-tight mt-0.5">Menüde ve pop-up ekranında otomatik gösterilir.</div>
+              <div class="text-[11px] text-stone-500 leading-tight mt-0.5">Açılış ekranında ve pop-up pencerede otomatik gösterilir.</div>
             </div>
           </div>
           <button type="button" onclick="downloadAdminWifiQr()"
@@ -158,15 +175,16 @@
         <div>
           <label class="block text-xs font-semibold text-stone-700 mb-1">Google Yorum Linki</label>
           <input type="url" id="setGoogleUrl" placeholder="https://g.page/r/..." class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-amber-500" />
-          <p class="text-[11px] text-stone-400 mt-1">Google İşletme Profilinizdeki "Yorum iste" bağlantısını yapıştırabilirsiniz.</p>
         </div>
+
         <div>
           <label class="block text-xs font-semibold text-stone-700 mb-1">Instagram Bağlantısı (İsteğe bağlı)</label>
           <input type="url" id="setInstaUrl" placeholder="https://instagram.com/..." class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-amber-500" />
         </div>
+
         <div class="flex justify-end gap-2 pt-2">
           <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 text-xs font-semibold text-stone-600">İptal</button>
-          <button type="submit" id="saveSettingsBtn" class="px-4 py-2 bg-sky-600 text-white rounded-xl text-xs font-semibold hover:bg-sky-700">Kaydet</button>
+          <button type="submit" id="saveSettingsBtn" class="px-5 py-2 bg-sky-600 text-white rounded-xl text-xs font-semibold hover:bg-sky-700">Kaydet</button>
         </div>
       </form>
     </div>
@@ -542,7 +560,7 @@
       );
     }
 
-    // --- WI-FI QR KODU VE AYARLARI ---
+    // --- İŞLETME AYARLARI & WI-FI QR KODU ---
     function generateWifiQrDataUrl(ssid, password, size = 320) {
       if (typeof qrcode === 'undefined' || !ssid) return '';
       if (qrcode.stringToBytesFuncs && qrcode.stringToBytesFuncs['UTF-8']) {
@@ -619,6 +637,9 @@
       document.getElementById('settingsModal').classList.replace('hidden', 'flex');
       const { data } = await sb.from('site_ayarlari').select('*').eq('id', 1).maybeSingle();
       if (data) {
+        document.getElementById('setHours').value = data.calisma_saatleri || '';
+        document.getElementById('setAddress').value = data.adres || '';
+        document.getElementById('setMapUrl').value = data.harita_linki || '';
         document.getElementById('setWifiName').value = data.wifi_adi || '';
         document.getElementById('setWifiPass').value = data.wifi_sifresi || '';
         document.getElementById('setGoogleUrl').value = data.google_yorum_linki || '';
@@ -638,6 +659,9 @@
 
       const payload = {
         id: 1,
+        calisma_saatleri: document.getElementById('setHours').value.trim(),
+        adres: document.getElementById('setAddress').value.trim(),
+        harita_linki: document.getElementById('setMapUrl').value.trim(),
         wifi_adi: document.getElementById('setWifiName').value.trim(),
         wifi_sifresi: document.getElementById('setWifiPass').value.trim(),
         google_yorum_linki: document.getElementById('setGoogleUrl').value.trim(),
@@ -651,7 +675,7 @@
         alert('Ayarlar kaydedilemedi: ' + error.message);
       } else {
         closeSettingsModal();
-        alert('Wi-Fi ve Google Yorum ayarları güncellendi!');
+        alert('Açılış sayfası ve işletme bilgileri güncellendi!');
       }
     });
 
