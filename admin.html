@@ -210,7 +210,7 @@
 
   <!-- TOPLU FİYAT GÜNCELLEME ÖNİZLEME PENCERESİ -->
   <div id="bulkModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-xl overflow-hidden">
+    <div class="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-xl overflow-hidden">
       <div class="p-4 border-b border-stone-200 flex items-center justify-between bg-stone-50">
         <div>
           <h2 class="font-bold text-base text-stone-900">Toplu Fiyat Güncelleme Önizlemesi</h2>
@@ -219,19 +219,55 @@
         <button onclick="closeBulkModal()" class="text-stone-400 hover:text-stone-700 text-lg font-bold px-2">✕</button>
       </div>
 
-      <div class="px-4 py-2.5 bg-amber-50/70 border-b border-amber-100 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <label class="flex items-center gap-2 font-medium text-stone-700 cursor-pointer">
-          <input type="checkbox" id="includeVatCheckbox" checked onchange="recalculateBulkPrices()" class="rounded text-amber-600" />
-          <span>KDV ekle (%10 / %20)</span>
-        </label>
-        <div class="flex items-center gap-2">
-          <span class="font-medium text-stone-700">Yuvarlama:</span>
-          <select id="roundingModeSelect" onchange="recalculateBulkPrices()" class="bg-white border border-stone-300 rounded-lg px-2 py-1 text-xs font-semibold text-stone-800 outline-none">
-            <option value="1" selected>En yakın 1 TL</option>
-            <option value="5">En yakın 5 TL</option>
-            <option value="0.5">En yakın 0,50 TL</option>
-            <option value="none">Yuvarlama Yok (Kuruşlu)</option>
-          </select>
+      <!-- Toplu Fiyat Oynatma & KDV/Yuvarlama Araç Çubuğu -->
+      <div class="px-4 py-2.5 bg-amber-50/70 border-b border-amber-100 space-y-2.5 text-xs">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-3">
+            <label class="flex items-center gap-1.5 font-medium text-stone-700 cursor-pointer">
+              <input type="checkbox" id="includeVatCheckbox" checked onchange="recalculateBulkPrices()" class="rounded text-amber-600" />
+              <span>KDV ekle (%10 / %20)</span>
+            </label>
+
+            <div class="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-stone-300">
+              <span class="font-semibold text-stone-600">Toplu %:</span>
+              <input type="number" step="1" id="bulkPercentAdjust" value="0" oninput="recalculateBulkPrices()"
+                title="Örn: 10 yazarsanız %10 zam, -5 yazarsanız %5 indirim uygular"
+                class="w-14 text-center font-bold text-stone-900 outline-none" />
+              <span class="text-stone-400 font-bold">%</span>
+            </div>
+
+            <div class="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-stone-300">
+              <span class="font-semibold text-stone-600">Toplu ±₺:</span>
+              <input type="number" step="1" id="bulkFlatAdjust" value="0" oninput="recalculateBulkPrices()"
+                title="Örn: 5 yazarsanız tüm fiyatlara +5 TL ekler"
+                class="w-14 text-center font-bold text-stone-900 outline-none" />
+              <span class="text-stone-400 font-bold">₺</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="font-medium text-stone-700">Yuvarlama:</span>
+            <select id="roundingModeSelect" onchange="recalculateBulkPrices()" class="bg-white border border-stone-300 rounded-lg px-2 py-1 text-xs font-semibold text-stone-800 outline-none">
+              <option value="1" selected>En yakın 1 TL</option>
+              <option value="5">En yakın 5 TL</option>
+              <option value="0.5">En yakın 0,50 TL</option>
+              <option value="none">Yuvarlama Yok (Kuruşlu)</option>
+            </select>
+            <button type="button" onclick="resetBulkControls()"
+              class="px-2.5 py-1 rounded-lg bg-stone-200 text-stone-700 font-semibold hover:bg-stone-300 transition">
+              Sıfırla
+            </button>
+          </div>
+        </div>
+
+        <!-- Rapor İçi Arama & Aynı Fiyatlı Ürünleri Gösterme -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-amber-200/60">
+          <input type="text" id="bulkSearchInput" placeholder="Rapor içinde ürün adı veya kodu ara (fiyatıyla oynamak için)..." oninput="renderBulkPreview()"
+            class="flex-1 bg-white px-3 py-1.5 rounded-lg border border-stone-300 text-xs outline-none focus:border-amber-500" />
+          <label class="flex items-center gap-1.5 font-medium text-stone-700 cursor-pointer flex-shrink-0">
+            <input type="checkbox" id="showUnchangedCheckbox" onchange="renderBulkPreview()" class="rounded text-amber-600" />
+            <span>Fiyatı aynı olanları da göster</span>
+          </label>
         </div>
       </div>
 
@@ -258,8 +294,10 @@
 
     let products = [];
     let parsedReportRows = [];
-    let bulkChanges = [];
+    let bulkExistingItems = [];
     let bulkNewItems = [];
+    let manualExistingPrices = new Map();
+    let manualNewPrices = new Map();
 
     let currentOrderTab = 'products';
     let orderDraftCategories = [];
@@ -980,7 +1018,7 @@
       }
     });
 
-    // --- HTML RAPOR OKUMA VE TOPLU FİYAT GÜNCELLEME ---
+    // --- HTML RAPOR OKUMA VE CANLI FİYAT OYNATMA ---
     function cleanCellText(cell) {
       return cell ? cell.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '';
     }
@@ -1065,18 +1103,37 @@
         }
 
         event.target.value = '';
+        manualExistingPrices.clear();
+        manualNewPrices.clear();
+        document.getElementById('bulkPercentAdjust').value = '0';
+        document.getElementById('bulkFlatAdjust').value = '0';
+        document.getElementById('bulkSearchInput').value = '';
+        document.getElementById('showUnchangedCheckbox').checked = false;
+
         recalculateBulkPrices();
         document.getElementById('bulkModal').classList.replace('hidden', 'flex');
       };
       reader.readAsText(file, 'UTF-8');
     }
 
+    function resetBulkControls() {
+      manualExistingPrices.clear();
+      manualNewPrices.clear();
+      document.getElementById('includeVatCheckbox').checked = true;
+      document.getElementById('bulkPercentAdjust').value = '0';
+      document.getElementById('bulkFlatAdjust').value = '0';
+      document.getElementById('roundingModeSelect').value = '1';
+      recalculateBulkPrices();
+    }
+
     function recalculateBulkPrices() {
       const addVat = document.getElementById('includeVatCheckbox').checked;
+      const percentAdjust = parseFloat(document.getElementById('bulkPercentAdjust').value) || 0;
+      const flatAdjust = parseFloat(document.getElementById('bulkFlatAdjust').value) || 0;
       const roundingMode = document.getElementById('roundingModeSelect').value;
-      bulkChanges = [];
+
+      bulkExistingItems = [];
       bulkNewItems = [];
-      let unchangedCount = 0;
 
       const byCode = new Map();
       const byName = new Map();
@@ -1086,9 +1143,11 @@
       });
 
       const calculatedRows = parsedReportRows.map((item, idx) => {
-        const rawWithVat = addVat ? item.rawPrice * (1 + item.vat / 100) : item.rawPrice;
-        const finalPrice = applyRounding(rawWithVat, roundingMode);
-        return { ...item, idx, finalPrice };
+        let price = addVat ? item.rawPrice * (1 + item.vat / 100) : item.rawPrice;
+        if (percentAdjust !== 0) price = price * (1 + percentAdjust / 100);
+        if (flatAdjust !== 0) price = price + flatAdjust;
+        const calcPrice = Math.max(0, applyRounding(price, roundingMode));
+        return { ...item, idx, calcPrice };
       });
 
       const seenDbIds = new Set();
@@ -1098,24 +1157,27 @@
         seenDbIds.add(matched.id);
         matchedRowIndices.add(row.idx);
         const updatedCode = row.code && matched.urun_kodu !== row.code ? row.code : null;
+        const oldPrice = Number(matched.fiyat);
+        const hasManual = manualExistingPrices.has(matched.id);
+        const finalPrice = hasManual ? manualExistingPrices.get(matched.id) : row.calcPrice;
+        const isDifferent = oldPrice !== finalPrice;
 
-        if (Number(matched.fiyat) !== row.finalPrice) {
-          bulkChanges.push({
-            id: matched.id,
-            code: row.code || matched.urun_kodu || '',
-            newCode: updatedCode,
-            name: matched.ad,
-            reportName: row.name,
-            oldPrice: Number(matched.fiyat),
-            newPrice: row.finalPrice,
-            selected: true
-          });
-        } else {
-          unchangedCount++;
-        }
+        bulkExistingItems.push({
+          id: matched.id,
+          code: row.code || matched.urun_kodu || '',
+          newCode: updatedCode,
+          cat: matched.kategori || row.cat,
+          name: matched.ad,
+          reportName: row.name,
+          oldPrice,
+          calcPrice: row.calcPrice,
+          newPrice: finalPrice,
+          isManual: hasManual,
+          selected: isDifferent
+        });
       };
 
-      // 1. AŞAMA: Önce birebir ürün adına göre eşleştir (eski kod çakışmalarını önler)
+      // 1. AŞAMA: Önce birebir ürün adına göre eşleştir
       for (const row of calculatedRows) {
         const matchedByName = byName.get(row.name.toLocaleUpperCase('tr-TR'));
         if (matchedByName && !seenDbIds.has(matchedByName.id)) {
@@ -1130,62 +1192,180 @@
         if (matchedByCode && !seenDbIds.has(matchedByCode.id)) {
           registerMatch(matchedByCode, row);
         } else {
+          const hasManual = manualNewPrices.has(row.idx);
+          const finalPrice = hasManual ? manualNewPrices.get(row.idx) : row.calcPrice;
           bulkNewItems.push({
+            idx: row.idx,
             code: row.code,
             cat: row.cat.toLocaleUpperCase('tr-TR'),
             name: row.name,
-            newPrice: row.finalPrice,
-            selected: false
+            calcPrice: row.calcPrice,
+            newPrice: finalPrice,
+            isManual: hasManual,
+            selected: hasManual
           });
         }
       }
 
-      document.getElementById('bulkSummary').textContent = 
-        `${parsedReportRows.length} ürün okundu • ${bulkChanges.length} fiyat değişikliği • ${unchangedCount} ürün aynı • ${bulkNewItems.length} yeni kayıt`;
+      updateBulkSummaryText();
+      renderBulkPreview();
+    }
 
+    function updateBulkSummaryText() {
+      const changedCount = bulkExistingItems.filter(i => i.selected).length;
+      const sameCount = bulkExistingItems.filter(i => i.oldPrice === i.newPrice).length;
+      document.getElementById('bulkSummary').textContent = 
+        `${parsedReportRows.length} ürün okundu • ${changedCount} seçili güncelleme • ${sameCount} ürün aynı • ${bulkNewItems.length} yeni kayıt`;
+    }
+
+    function updateExistingItemPrice(itemIndex, rawValue) {
+      const item = bulkExistingItems[itemIndex];
+      if (!item) return;
+      const val = parseFloat(rawValue);
+      if (isNaN(val) || val < 0) return;
+
+      const rounded = Number(val.toFixed(2));
+      item.newPrice = rounded;
+      item.isManual = rounded !== item.calcPrice;
+      if (item.isManual) {
+        manualExistingPrices.set(item.id, rounded);
+      } else {
+        manualExistingPrices.delete(item.id);
+      }
+      item.selected = item.newPrice !== item.oldPrice;
+
+      updateBulkSummaryText();
+      renderBulkPreview();
+    }
+
+    function stepExistingItemPrice(itemIndex, delta) {
+      const item = bulkExistingItems[itemIndex];
+      if (!item) return;
+      const nextVal = Math.max(0, Number((item.newPrice + delta).toFixed(2)));
+      updateExistingItemPrice(itemIndex, nextVal);
+    }
+
+    function resetExistingItemPrice(itemIndex) {
+      const item = bulkExistingItems[itemIndex];
+      if (!item) return;
+      manualExistingPrices.delete(item.id);
+      item.newPrice = item.calcPrice;
+      item.isManual = false;
+      item.selected = item.newPrice !== item.oldPrice;
+
+      updateBulkSummaryText();
+      renderBulkPreview();
+    }
+
+    function updateNewItemPrice(newIndex, rawValue) {
+      const item = bulkNewItems[newIndex];
+      if (!item) return;
+      const val = parseFloat(rawValue);
+      if (isNaN(val) || val < 0) return;
+
+      const rounded = Number(val.toFixed(2));
+      item.newPrice = rounded;
+      item.isManual = rounded !== item.calcPrice;
+      if (item.isManual) {
+        manualNewPrices.set(item.idx, rounded);
+        item.selected = true;
+      } else {
+        manualNewPrices.delete(item.idx);
+      }
       renderBulkPreview();
     }
 
     function renderBulkPreview() {
       const container = document.getElementById('bulkPreviewBody');
+      const searchQ = normalizeTR(document.getElementById('bulkSearchInput').value).trim();
+      const showUnchanged = document.getElementById('showUnchangedCheckbox').checked;
+
+      // Arama yapılıyorsa veya "aynı olanları göster" seçiliyse tüm eşleşenleri göster, yoksa sadece değişen/seçili olanları göster
+      const visibleExisting = bulkExistingItems
+        .map((item, idx) => ({ item, idx }))
+        .filter(({ item }) => {
+          const matchesSearch = !searchQ ||
+            normalizeTR(item.name).includes(searchQ) ||
+            normalizeTR(item.code).includes(searchQ) ||
+            normalizeTR(item.cat).includes(searchQ);
+          if (!matchesSearch) return false;
+          if (searchQ || showUnchanged) return true;
+          return item.oldPrice !== item.newPrice || item.selected || item.isManual;
+        });
+
+      const visibleNew = bulkNewItems
+        .map((item, idx) => ({ item, idx }))
+        .filter(({ item }) => {
+          if (!searchQ) return true;
+          return normalizeTR(item.name).includes(searchQ) ||
+            normalizeTR(item.code).includes(searchQ) ||
+            normalizeTR(item.cat).includes(searchQ);
+        });
+
       let html = '';
 
-      if (bulkChanges.length === 0) {
-        html += `<div class="text-center py-6 bg-stone-50 rounded-xl text-sm text-stone-500">Mevcut ürünlerin tamamının fiyatı rapordaki tutarlarla aynı.</div>`;
+      if (visibleExisting.length === 0) {
+        html += `<div class="text-center py-6 bg-stone-50 rounded-xl text-sm text-stone-500">
+          ${searchQ ? 'Aramanıza uygun mevcut ürün bulunamadı.' : 'Fiyatı değişen ürün yok. Diğer ürünlerin fiyatıyla oynamak için yukarıdan arama yapabilir veya "Fiyatı aynı olanları da göster" kutusunu işaretleyebilirsiniz.'}
+        </div>`;
       } else {
+        const allChecked = visibleExisting.every(({ item }) => item.selected);
         html += `
           <div>
-            <h3 class="text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">Fiyatı Güncellenecek Ürünler (${bulkChanges.length})</h3>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-stone-500">Mevcut Ürünler (${visibleExisting.length})</h3>
+              <span class="text-[11px] text-stone-400">Fiyat kutusuna yazabilir veya -/+ butonlarıyla oynayabilirsiniz</span>
+            </div>
             <div class="border border-stone-200 rounded-xl overflow-hidden">
               <table class="w-full text-left text-xs">
                 <thead class="bg-stone-100 text-stone-600 font-semibold">
                   <tr>
-                    <th class="p-2.5 w-8"><input type="checkbox" checked onchange="toggleAllBulkChanges(this.checked)" /></th>
+                    <th class="p-2.5 w-8"><input type="checkbox" ${allChecked ? 'checked' : ''} onchange="toggleAllBulkChanges(this.checked)" /></th>
                     <th class="p-2.5">Ürün</th>
-                    <th class="p-2.5 text-right">Eski Fiyat</th>
+                    <th class="p-2.5 text-right">Mevcut Fiyat</th>
                     <th class="p-2.5 text-right">Yeni Fiyat (₺)</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-stone-100">
-                  ${bulkChanges.map((c, idx) => `
-                    <tr class="hover:bg-stone-50">
-                      <td class="p-2.5"><input type="checkbox" ${c.selected ? 'checked' : ''} onchange="bulkChanges[${idx}].selected = this.checked" /></td>
-                      <td class="p-2.5">
-                        <div class="font-semibold text-stone-900">${escapeHtml(c.name)}</div>
-                        <div class="text-[10px] text-stone-400">
-                          ${escapeHtml(c.code || '')}
-                          ${c.reportName && c.reportName.toLocaleUpperCase('tr-TR') !== c.name.toLocaleUpperCase('tr-TR')
-                            ? ` • Rapor adı: ${escapeHtml(c.reportName)}`
-                            : ''}
-                        </div>
-                      </td>
-                      <td class="p-2.5 text-right text-stone-400 line-through">${c.oldPrice} ₺</td>
-                      <td class="p-2.5 text-right">
-                        <input type="number" step="0.01" value="${c.newPrice}" onchange="bulkChanges[${idx}].newPrice = parseFloat(this.value)"
-                          class="w-20 px-2 py-1 border rounded-lg text-right font-bold text-emerald-700" />
-                      </td>
-                    </tr>
-                  `).join('')}
+                  ${visibleExisting.map(({ item: c, idx }) => {
+                    const isChanged = c.oldPrice !== c.newPrice;
+                    return `
+                      <tr class="${isChanged ? 'bg-emerald-50/30 hover:bg-emerald-50/60' : 'hover:bg-stone-50'}">
+                        <td class="p-2.5">
+                          <input type="checkbox" ${c.selected ? 'checked' : ''} onchange="bulkExistingItems[${idx}].selected = this.checked; updateBulkSummaryText();" />
+                        </td>
+                        <td class="p-2.5">
+                          <div class="font-semibold text-stone-900">
+                            ${escapeHtml(c.name)}
+                            ${c.isManual ? `<span class="ml-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">Elle Düzenlendi</span>` : ''}
+                          </div>
+                          <div class="text-[10px] text-stone-400">
+                            ${escapeHtml(c.cat)} ${c.code ? `• ${escapeHtml(c.code)}` : ''}
+                            ${c.isManual ? ` • Rapor hesabı: ${c.calcPrice} ₺` : ''}
+                          </div>
+                        </td>
+                        <td class="p-2.5 text-right ${isChanged ? 'text-stone-400 line-through' : 'text-stone-600 font-medium'}">${c.oldPrice} ₺</td>
+                        <td class="p-2.5 text-right">
+                          <div class="inline-flex items-center gap-1 justify-end">
+                            <button type="button" onclick="stepExistingItemPrice(${idx}, -5)" title="-5 TL"
+                              class="px-1.5 py-1 rounded bg-stone-100 hover:bg-rose-100 text-stone-700 font-bold text-[11px] transition">-5</button>
+                            <button type="button" onclick="stepExistingItemPrice(${idx}, -1)" title="-1 TL"
+                              class="px-1.5 py-1 rounded bg-stone-100 hover:bg-rose-100 text-stone-700 font-bold text-[11px] transition">-1</button>
+                            <input type="number" step="0.01" value="${c.newPrice}" onchange="updateExistingItemPrice(${idx}, this.value)"
+                              class="w-20 px-2 py-1 border ${isChanged ? 'border-emerald-400 text-emerald-700 bg-white' : 'border-stone-300 text-stone-800'} rounded-lg text-right font-bold outline-none focus:border-amber-500" />
+                            <button type="button" onclick="stepExistingItemPrice(${idx}, 1)" title="+1 TL"
+                              class="px-1.5 py-1 rounded bg-stone-100 hover:bg-emerald-100 text-stone-700 font-bold text-[11px] transition">+1</button>
+                            <button type="button" onclick="stepExistingItemPrice(${idx}, 5)" title="+5 TL"
+                              class="px-1.5 py-1 rounded bg-stone-100 hover:bg-emerald-100 text-stone-700 font-bold text-[11px] transition">+5</button>
+                            ${c.isManual ? `
+                              <button type="button" onclick="resetExistingItemPrice(${idx})" title="Rapor fiyatına (${c.calcPrice} ₺) döndür"
+                                class="px-1.5 py-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] transition">↺</button>
+                            ` : ''}
+                          </div>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
                 </tbody>
               </table>
             </div>
@@ -1193,21 +1373,21 @@
         `;
       }
 
-      if (bulkNewItems.length > 0) {
+      if (visibleNew.length > 0) {
         html += `
           <div>
-            <h3 class="text-xs font-bold uppercase tracking-wider text-amber-700 mb-2">Menüde Olmayan Yeni Ürünler (${bulkNewItems.length}) — İsterseniz Seçip Ekleyin</h3>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-amber-700 mb-2">Menüde Olmayan Yeni Ürünler (${visibleNew.length}) — İsterseniz Fiyatını Düzenleyip Ekleyin</h3>
             <div class="border border-amber-200 rounded-xl overflow-hidden">
               <table class="w-full text-left text-xs">
                 <thead class="bg-amber-50 text-amber-900 font-semibold">
                   <tr>
                     <th class="p-2.5 w-8">Ekle</th>
                     <th class="p-2.5">Kategori / Ürün</th>
-                    <th class="p-2.5 text-right">Fiyat</th>
+                    <th class="p-2.5 text-right">Fiyat (₺)</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-amber-100">
-                  ${bulkNewItems.map((n, idx) => `
+                  ${visibleNew.map(({ item: n, idx }) => `
                     <tr>
                       <td class="p-2.5"><input type="checkbox" ${n.selected ? 'checked' : ''} onchange="bulkNewItems[${idx}].selected = this.checked" /></td>
                       <td class="p-2.5">
@@ -1215,7 +1395,10 @@
                         <span class="font-medium text-stone-800">${escapeHtml(n.name)}</span>
                         ${n.code ? `<span class="text-[10px] font-mono text-stone-400 ml-1">(${escapeHtml(n.code)})</span>` : ''}
                       </td>
-                      <td class="p-2.5 text-right font-bold">${n.newPrice} ₺</td>
+                      <td class="p-2.5 text-right">
+                        <input type="number" step="0.01" value="${n.newPrice}" onchange="updateNewItemPrice(${idx}, this.value)"
+                          class="w-20 px-2 py-1 border border-amber-300 rounded-lg text-right font-bold text-stone-900 outline-none focus:border-amber-500" />
+                      </td>
                     </tr>
                   `).join('')}
                 </tbody>
@@ -1229,7 +1412,20 @@
     }
 
     function toggleAllBulkChanges(checked) {
-      bulkChanges.forEach(c => c.selected = checked);
+      const searchQ = normalizeTR(document.getElementById('bulkSearchInput').value).trim();
+      const showUnchanged = document.getElementById('showUnchangedCheckbox').checked;
+
+      bulkExistingItems.forEach(item => {
+        const matchesSearch = !searchQ ||
+          normalizeTR(item.name).includes(searchQ) ||
+          normalizeTR(item.code).includes(searchQ) ||
+          normalizeTR(item.cat).includes(searchQ);
+        const isVisible = matchesSearch && (searchQ || showUnchanged || item.oldPrice !== item.newPrice || item.selected || item.isManual);
+        if (isVisible) {
+          item.selected = checked;
+        }
+      });
+      updateBulkSummaryText();
       renderBulkPreview();
     }
 
@@ -1239,7 +1435,7 @@
     }
 
     async function applyBulkUpdates() {
-      const toUpdate = bulkChanges.filter(c => c.selected && !isNaN(c.newPrice));
+      const toUpdate = bulkExistingItems.filter(c => c.selected && !isNaN(c.newPrice));
       const toInsert = bulkNewItems.filter(n => n.selected && !isNaN(n.newPrice));
 
       if (toUpdate.length === 0 && toInsert.length === 0) {
