@@ -761,6 +761,7 @@
                   </div>
                 ` : ''}
                 <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded truncate">${escapeHtml(p.kategori)}</span>
+                ${p.urun_kodu ? `<span class="text-[10px] font-mono text-stone-400">${escapeHtml(p.urun_kodu)}</span>` : ''}
               </div>
               <div class="flex items-center gap-2.5 text-xs">
                 <label class="flex items-center gap-1 cursor-pointer font-medium text-amber-700">
@@ -1020,12 +1021,15 @@
 
         for (const row of rows) {
           const cells = Array.from(row.querySelectorAll('td, th')).map(cleanCellText);
-          const idxName = cells.findIndex(c => c.toLowerCase().includes('ürün adı'));
-          const idxPrice = cells.findIndex(c => c.toLowerCase().includes('satış fiyatı1'));
+          const idxName = cells.findIndex(c => c.toLocaleLowerCase('tr-TR').includes('ürün adı'));
+          const idxPrice = cells.findIndex(c => c.toLocaleLowerCase('tr-TR').includes('satış fiyatı1'));
           if (idxName !== -1 && idxPrice !== -1) {
-            const idxCode = cells.findIndex(c => c.toLowerCase().includes('ürün kodu'));
-            const idxCat = cells.findIndex(c => c.toLowerCase() === 'ana grup' || c.toLowerCase() === 'grup');
-            const idxVat = cells.findIndex(c => c.toLowerCase().includes('satış kdv'));
+            const idxCode = cells.findIndex(c => c.toLocaleLowerCase('tr-TR').includes('ürün kodu'));
+            const idxCat = cells.findIndex(c => {
+              const lc = c.toLocaleLowerCase('tr-TR');
+              return lc === 'ana grup' || lc === 'grup';
+            });
+            const idxVat = cells.findIndex(c => c.toLocaleLowerCase('tr-TR').includes('satış kdv'));
             if (idxCode !== -1) colCode = idxCode;
             colName = idxName;
             if (idxCat !== -1) colCat = idxCat;
@@ -1081,37 +1085,56 @@
         byName.set(p.ad.trim().toLocaleUpperCase('tr-TR'), p);
       });
 
-      const seenDbIds = new Set();
-
-      for (const item of parsedReportRows) {
+      const calculatedRows = parsedReportRows.map((item, idx) => {
         const rawWithVat = addVat ? item.rawPrice * (1 + item.vat / 100) : item.rawPrice;
         const finalPrice = applyRounding(rawWithVat, roundingMode);
+        return { ...item, idx, finalPrice };
+      });
 
-        const matched = (item.code && byCode.get(item.code.toUpperCase())) || 
-                        byName.get(item.name.toLocaleUpperCase('tr-TR'));
+      const seenDbIds = new Set();
+      const matchedRowIndices = new Set();
 
-        if (matched) {
-          if (seenDbIds.has(matched.id)) continue;
-          seenDbIds.add(matched.id);
+      const registerMatch = (matched, row) => {
+        seenDbIds.add(matched.id);
+        matchedRowIndices.add(row.idx);
+        const updatedCode = row.code && matched.urun_kodu !== row.code ? row.code : null;
 
-          if (Number(matched.fiyat) !== finalPrice) {
-            bulkChanges.push({
-              id: matched.id,
-              code: matched.urun_kodu || item.code,
-              name: matched.ad,
-              oldPrice: Number(matched.fiyat),
-              newPrice: finalPrice,
-              selected: true
-            });
-          } else {
-            unchangedCount++;
-          }
+        if (Number(matched.fiyat) !== row.finalPrice) {
+          bulkChanges.push({
+            id: matched.id,
+            code: row.code || matched.urun_kodu || '',
+            newCode: updatedCode,
+            name: matched.ad,
+            reportName: row.name,
+            oldPrice: Number(matched.fiyat),
+            newPrice: row.finalPrice,
+            selected: true
+          });
+        } else {
+          unchangedCount++;
+        }
+      };
+
+      // 1. AŞAMA: Önce birebir ürün adına göre eşleştir (eski kod çakışmalarını önler)
+      for (const row of calculatedRows) {
+        const matchedByName = byName.get(row.name.toLocaleUpperCase('tr-TR'));
+        if (matchedByName && !seenDbIds.has(matchedByName.id)) {
+          registerMatch(matchedByName, row);
+        }
+      }
+
+      // 2. AŞAMA: Adı değişmiş ürünler için kalanları ürün koduna göre eşleştir
+      for (const row of calculatedRows) {
+        if (matchedRowIndices.has(row.idx)) continue;
+        const matchedByCode = row.code ? byCode.get(row.code.toUpperCase()) : null;
+        if (matchedByCode && !seenDbIds.has(matchedByCode.id)) {
+          registerMatch(matchedByCode, row);
         } else {
           bulkNewItems.push({
-            code: item.code,
-            cat: item.cat.toLocaleUpperCase('tr-TR'),
-            name: item.name,
-            newPrice: finalPrice,
+            code: row.code,
+            cat: row.cat.toLocaleUpperCase('tr-TR'),
+            name: row.name,
+            newPrice: row.finalPrice,
             selected: false
           });
         }
@@ -1149,7 +1172,12 @@
                       <td class="p-2.5"><input type="checkbox" ${c.selected ? 'checked' : ''} onchange="bulkChanges[${idx}].selected = this.checked" /></td>
                       <td class="p-2.5">
                         <div class="font-semibold text-stone-900">${escapeHtml(c.name)}</div>
-                        <div class="text-[10px] text-stone-400">${escapeHtml(c.code || '')}</div>
+                        <div class="text-[10px] text-stone-400">
+                          ${escapeHtml(c.code || '')}
+                          ${c.reportName && c.reportName.toLocaleUpperCase('tr-TR') !== c.name.toLocaleUpperCase('tr-TR')
+                            ? ` • Rapor adı: ${escapeHtml(c.reportName)}`
+                            : ''}
+                        </div>
                       </td>
                       <td class="p-2.5 text-right text-stone-400 line-through">${c.oldPrice} ₺</td>
                       <td class="p-2.5 text-right">
@@ -1185,6 +1213,7 @@
                       <td class="p-2.5">
                         <span class="text-[10px] font-bold text-amber-700 mr-1">[${escapeHtml(n.cat)}]</span>
                         <span class="font-medium text-stone-800">${escapeHtml(n.name)}</span>
+                        ${n.code ? `<span class="text-[10px] font-mono text-stone-400 ml-1">(${escapeHtml(n.code)})</span>` : ''}
                       </td>
                       <td class="p-2.5 text-right font-bold">${n.newPrice} ₺</td>
                     </tr>
@@ -1226,7 +1255,11 @@
         const chunk = toUpdate.slice(i, i + 20);
         progress.textContent = `Fiyatlar güncelleniyor (${Math.min(i + 20, toUpdate.length)}/${toUpdate.length})...`;
         await Promise.all(
-          chunk.map(item => sb.from('urunler').update({ fiyat: item.newPrice }).eq('id', item.id))
+          chunk.map(item => {
+            const payload = { fiyat: item.newPrice };
+            if (item.newCode) payload.urun_kodu = item.newCode;
+            return sb.from('urunler').update(payload).eq('id', item.id);
+          })
         );
       }
 
